@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Classes to connect apache authentication into Zope/Plone."""
 __revision__ = "0.4"
 
@@ -10,6 +9,7 @@ from persistent.list import PersistentList
 from AccessControl import ClassSecurityInfo
 from Globals import InitializeClass
 from OFS.PropertyManager import PropertyManager
+from ZODB.POSException import ConflictError
 
 from Products.CMFCore.utils import getToolByName
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
@@ -25,7 +25,8 @@ try:
     from Products.PluggableAuthService import _SWALLOWABLE_PLUGIN_EXCEPTIONS
     _SWALLOWABLE_PLUGIN_EXCEPTIONS # pyflakes
 except ImportError:  # in case that private const goes away someday
-    _SWALLOWABLE_PLUGIN_EXCEPTIONS = (NameError, AttributeError, KeyError, TypeError, ValueError)
+    _SWALLOWABLE_PLUGIN_EXCEPTIONS = (NameError, AttributeError, KeyError,
+                                      TypeError, ValueError)
 
 stripDomainNamesKey = 'strip_domain_names'
 stripDomainNamesListKey = 'strip_domain_name_list'
@@ -44,17 +45,22 @@ usernameKey = 'user_id'
 PWCHARS = string.letters + string.digits + string.punctuation
 
 class AutoUserMakerPASPlugin(BasePlugin):
-    """An authentication plugin that expects a mapping like ExtractionPlugin
-    returns, makes the user specified therein, gives him the Member role so
-    Plone treats recognizes him, assigns local permissions if ShibbolethPermissions
-    is installed and passes control to the next authentication plugin.
+    """ An authentication plugin that creates member objects
 
-    This unittest doesn't show much since this really needs integration testing:
-    >>> from Products.AutoUserMakerPASPlugin.auth import AutoUserMakerPASPlugin
-    >>> AutoUserMakerPASPlugin('test').authenticateCredentials({})
+       AutoUserMakerPASPlugin expects a mapping like ExtractionPlugin
+       returns, makes the user specified therein, gives him the Member role so
+       Plone treats recognizes him, assigns local permissions if
+       ShibbolethPermissions is installed and passes control to the next
+       authentication plugin.
 
-    >>> AutoUserMakerPASPlugin('test').authenticateCredentials({'user_id': 'foobar'})
-    ('foobar', 'foobar')
+       This unittest doesn't show much since this really needs integration
+       testing:
+       >>> from Products.AutoUserMakerPASPlugin.auth import \
+               AutoUserMakerPASPlugin
+       >>> AutoUserMakerPASPlugin('test').authenticateCredentials({})
+       >>> AutoUserMakerPASPlugin('test').authenticateCredentials(
+       ...        {'user_id': 'foobar'})
+       ('foobar', 'foobar')
     """
     security = ClassSecurityInfo()
 
@@ -99,11 +105,14 @@ class AutoUserMakerPASPlugin(BasePlugin):
                     # Assign a dummy password. It'll never be used;.
                     user = self._getPAS().getUser(userId)
                     try:
-                        membershipTool = getToolByName(self, 'portal_membership')
+                        membershipTool = getToolByName(self,
+                                                       'portal_membership')
                         if not membershipTool.getHomeFolder(userId):
                             membershipTool.createMemberArea(userId)
+                    except (ConflictError, KeyboardInterrupt):
+                        raise
                     except Exception, e:
-                        logger.warning("error creating for home folder: %r = %s" % (e, e))
+                        pass
                     userProps = user.getPropertysheet('mutable_properties')
                     for ii in ('fullname', 'description', 'email', 'location'):
                         if credentials.has_key(ii):
@@ -126,11 +135,12 @@ class AutoUserMakerPASPlugin(BasePlugin):
                             try:
                                 # compile the pattern from authz_mappings
                                 oRe = re.compile(role['values'][ii])
-                                # and compare the pattern to the environment value
+                                # and compare the pattern to the environment
+                                # value
                                 match = oRe.search(credentials['filters'][ii])
+                            except (ConflictError, KeyboardInterrupt):
+                                raise
                             except Exception, e:
-                                logger.warning("error in regular expression %s for %s: %s" % \
-                                    (str(role['values'][ii]), str(credentials['filters'][ii]), str(e)))
                                 match = False
                             if match:
                                 assignRole = True
@@ -140,9 +150,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                     # for every mapping, so add specified roles or groups.
                     if assignRole:
                         for ii in role['roles'].iterkeys():
-                            #logger.info("role['roles'][%s] = %s" % (ii, str(role['roles'][ii])))
                             if role['roles'][ii] == 'on':
-                                #logger.info("found checked role %s" % ii)
                                 roles[ii] = True
                         for ii in role['groupid']:
                             groups.append(ii)
@@ -151,71 +159,66 @@ class AutoUserMakerPASPlugin(BasePlugin):
             # IRoleAssignerPlugins (just like doAddUser does for some reason):
             for curAssignerId, curAssigner in roleAssigners:
                 for role in roles.iterkeys():
-                    #logger.info("assigning role %s" % str(role))
                     try:
                         curAssigner.doAssignRoleToPrincipal(user.getId(), role)
                     except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
-                        logger.warning('RoleAssigner %s error' % curAssignerId, exc_info=True)
+                        logger.warning('RoleAssigner %s error' % curAssignerId,
+                                       exc_info=True)
 
             source_groups = getToolByName(self, 'source_groups')
             for ii in groups:
-                #logger.info("assigning %s group membership" % ii)
                 source_groups.addPrincipalToGroup(user.getId(), ii)
 
-            #logger.info("looking for ShibbolethPermissions")
             shibPerms = getToolByName(self, 'ShibbolethPermissions', None)
-            #logger.info("got %s" % str(shibPerms))
-            try: # Ignore any error here, since it just means the user didn't
+            uservals = credentials.get('localperms', None)
+            if shibPerms is not None and uservals:
+                # Ignore any error here, since it just means the user didn't
                 #  get permissions on something. Not ignoring means the user
                 #  will see a plone page that doesn't look like the user has
                 #  logged in.
-                if shibPerms:
-                    uservals = credentials.get('localperms', None)
-                    #logger.info("uservals = %r" % repr(uservals))
-                    if uservals:
-                        for path, regexs in shibPerms.getLocalRoles().iteritems():
-                            #logger.info("checking path %s" % path)
-                            for ii in regexs:
-                                #logger.info("for data %r" % repr(ii))
-                                found = True
-                                # Make sure the incoming user has all of the needed attributes
-                                for name in ii.iterkeys():
-                                    if name == '_roles':
+                try:
+                    for path, regexs in shibPerms.getLocalRoles().iteritems():
+                        for ii in regexs:
+                            found = True
+                            # Make sure the incoming user has all of the
+                            # needed attributes
+                            for name in ii.iterkeys():
+                                if name == '_roles':
+                                    continue
+                                if not uservals.has_key(name):
+                                    found = False
+                                if not found:
+                                    break
+                            if found:
+                                for name, pattern in ii.iteritems():
+                                    if name == '_roles' or \
+                                       uservals[name] is None:
                                         continue
-                                    if not uservals.has_key(name):
-                                        #logger.info("%s does not have a %s key" % (str(uservals), name))
-                                        found = False
+                                    try:
+                                        regex = re.compile(pattern)
+                                        if not regex.search(uservals[name]):
+                                            found = False
+                                    except (ConflictError, KeyboardInterrupt):
+                                        raise
+                                    except Exception, e:
+                                        pass
                                     if not found:
                                         break
-                                if found:
-                                    #logger.info("User has all of the attributes; making sure they match.")
-                                    for name, pattern in ii.iteritems():
-                                        #logger.info(" name = %s, pattern = %s" % (name, pattern))
-                                        if name == '_roles' or uservals[name] is None:
-                                            continue
-                                        try:
-                                            regex = re.compile(pattern)
-                                            if not regex.search(uservals[name]):
-                                                logger.info("pattern %s for %s does not match %s" % (name, pattern, uservals[name]))
-                                                found = False
-                                        except Exception, e:
-                                            logger.warning("error in regular expression %s for name %s: %s" % \
-                                                (pattern, name, str(e)))
-                                        if not found:
-                                            break
-                                if found:
-                                    #logger.info("all attributes match, setting permissions")
-                                    # All of the attributes match
+                            if found:
+                                # All of the attributes match
+                                try:
                                     obj = self.unrestrictedTraverse(path)
-                                    logger.debug("Setting permissions on %r to %s" % (
-                                                repr(obj), ', '.join(ii['_roles'])))
-                                    obj.manage_setLocalRoles(userId, ii['_roles'])
-                                    obj.reindexObjectSecurity()
-            except (ConflictError, KeyboardInterrupt):
-                raise
-            except Exception, e:
-                logger.warning("error processing local roles: %s" % str(e))
-        #logger.info("authenticateCredentials returning: %s" % str(userId))
+                                except (AttributeError, KeyError):
+                                    continue
+                                logger.debug("Setting permissions on %r to %s",
+                                             (repr(obj),
+                                              ', '.join(ii['_roles'])))
+                                obj.manage_setLocalRoles(userId, ii['_roles'])
+                                obj.reindexObjectSecurity()
+                except (ConflictError, KeyboardInterrupt):
+                    raise
+                except Exception, e:
+                    logger.warning("error processing local roles: %s" % str(e))
         if userId is None:
             return None  # Pass control to the next IAuthenticationPlugin.
         return userId, userId
@@ -246,7 +249,7 @@ class MockUser:
 
 
 class ExtractionPlugin(BasePlugin, PropertyManager):
-    """A simple extraction plugin that retrieves its credentials
+    """ A simple extraction plugin that retrieves its credentials
     information from a successful apache authentication.
 
     Usage info:
@@ -255,7 +258,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     ...         self.environ = environ
     >>> request = MockRequest({'HTTP_X_REMOTE_USER': 'foobar'})
 
-    ExtractionPlugin is an abstract class, but ApacheAuthPluginHandler fills it out.
+    ExtractionPlugin is an abstract class, but ApacheAuthPluginHandler fills
+    it out.
     >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
     >>> handler = ApacheAuthPluginHandler('someId')
     >>> handler.extractCredentials(request)
@@ -265,24 +269,26 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     security = ClassSecurityInfo()
 
     def __init__(self):
-        config = ((stripDomainNamesKey, 'int', 'w', 1),
-                  (stripDomainNamesListKey, 'lines', 'w', []),
-                  (httpRemoteUserKey, 'lines', 'w', ['HTTP_X_REMOTE_USER',]),
-                  (httpCommonnameKey, 'lines', 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
-                  (httpDescriptionKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
-                  (httpEmailKey, 'lines', 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
-                  (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
-                  (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
-                  (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
-                  (httpAuthzTokensKey, 'lines', 'w', []),
-                  (httpSharingTokensKey, 'lines', 'w', []),
-                  (httpSharingLabelsKey, 'lines', 'w', []),
-                  ('required_roles', 'lines', 'wd', []),
-                  ('login_users', 'lines', 'wd', []))
+        config = (
+            (stripDomainNamesKey, 'int', 'w', 1),
+            (stripDomainNamesListKey, 'lines', 'w', []),
+            (httpRemoteUserKey, 'lines', 'w', ['HTTP_X_REMOTE_USER',]),
+            (httpCommonnameKey, 'lines', 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
+            (httpDescriptionKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
+            (httpEmailKey, 'lines', 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
+            (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
+            (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
+            (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
+            (httpAuthzTokensKey, 'lines', 'w', []),
+            (httpSharingTokensKey, 'lines', 'w', []),
+            (httpSharingLabelsKey, 'lines', 'w', []),
+            ('required_roles', 'lines', 'wd', []),
+            ('login_users', 'lines', 'wd', []))
         # Create any missing properties
         ids = {}
         for prop in (config):
-            ids[prop[0]] = True   # keep track of property names for quick lookup
+            # keep track of property names for quick lookup
+            ids[prop[0]] = True
             if prop[0] not in self.propertyIds():
                 self.manage_addProperty(id=prop[0],
                                         type=prop[1],
@@ -291,43 +297,43 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         # Delete any existing properties that aren't in config
         for prop in self._properties:
             if not ids.has_key(prop['id']) and prop['id'] != 'prefix':
-                #logger.info("deleting %s" % (repr(prop)))
                 self.manage_delProperties(prop['id'])
         # Get a list for storing mappings
-        try:
-            self.authzMappings = PersistentList()
-        except Exception, err:
-            logger.warning("error creating authzMappings: %s" % str(err), exc_info=True)
+        self.authzMappings = PersistentList()
 
     security.declareProtected(ManageUsers, 'getConfig')
     def getConfig(self):
-        """Return a mapping of my configuration values, for use in a page template.
+        """ Return a mapping of my configuration values, for use in a
+            page template.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getConfig()
         {'http_state': ('HTTP_SHIB_ORGPERSON_STATE',), 'strip_domain_name_list': (), 'http_remote_user': ('HTTP_X_REMOTE_USER',), 'http_authz_tokens': (), 'strip_domain_names': 1, 'http_email': ('HTTP_SHIB_INETORGPERSON_MAIL',), 'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',), 'http_sharing_tokens': (), 'http_locality': ('HTTP_SHIB_ORGPERSON_LOCALITY',), 'http_sharing_labels': (), 'http_description': ('HTTP_SHIB_ORGPERSON_TITLE',), 'http_country': ('HTTP_SHIB_ORGPERSON_C',)}
         """
-        return {stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
-                stripDomainNamesListKey: self.getProperty(stripDomainNamesListKey),
-                httpRemoteUserKey: self.getProperty(httpRemoteUserKey),
-                httpCommonnameKey: self.getProperty(httpCommonnameKey),
-                httpDescriptionKey: self.getProperty(httpDescriptionKey),
-                httpEmailKey: self.getProperty(httpEmailKey),
-                httpLocalityKey: self.getProperty(httpLocalityKey),
-                httpStateKey: self.getProperty(httpStateKey),
-                httpCountryKey: self.getProperty(httpCountryKey),
-                httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
-                httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
-                httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey)}
+        return {
+            stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
+            stripDomainNamesListKey: self.getProperty(stripDomainNamesListKey),
+            httpRemoteUserKey: self.getProperty(httpRemoteUserKey),
+            httpCommonnameKey: self.getProperty(httpCommonnameKey),
+            httpDescriptionKey: self.getProperty(httpDescriptionKey),
+            httpEmailKey: self.getProperty(httpEmailKey),
+            httpLocalityKey: self.getProperty(httpLocalityKey),
+            httpStateKey: self.getProperty(httpStateKey),
+            httpCountryKey: self.getProperty(httpCountryKey),
+            httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
+            httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
+            httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey)}
 
     security.declarePublic('getSharingConfig')
     def getSharingConfig(self):
         """Return the items end users can use to share with.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getSharingConfig()
         {'http_sharing_tokens': (), 'http_sharing_labels': ()}
@@ -340,7 +346,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Return http_authz_tokens as a tupple (how getProperty returns it).
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getTokens()
         ()
@@ -356,7 +363,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Return authzMappings as a list of dictionaries.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getMappings()
         []
@@ -378,7 +386,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Extract the required roles from the property.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.requiredRoles()
         ()
@@ -390,7 +399,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Extract the login users from the property.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.loginUsers()
         ()
@@ -423,13 +433,15 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                     if user[ii[0]]:
                         break
             except (IndexError, TypeError), err:
-                logger.warning("user attribute configuration error: %s" % str(err), exc_info=True)
+                logger.warning("user attribute configuration error: %s",
+                               err, exc_info=True)
         if not user[usernameKey] or user[usernameKey] == '(null)':
             return None
 
         # clean up the user id, if told to do so
         if config[stripDomainNamesKey] and user[usernameKey].find('@') > 0:
-            # With some Apache setups, the username is returned as 'user123@some.domain.name'.
+            # With some Apache setups, the username is returned as
+            # 'user123@some.domain.name'.
             nameDomain = user[usernameKey].split('@', 1)
             if len(nameDomain) == 1 or \
                config[stripDomainNamesKey] == 1 or \
@@ -555,10 +567,12 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         """Return a list of roles.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> from pprint import pprint
-        >>> sorted([role['id'] for role in handler.getRoles(self.portal.acl_users)])
+        >>> sorted([role['id']
+        ...         for role in handler.getRoles(self.portal.acl_users)])
         ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
         """
         portalRoleManager = getToolByName(context, 'portal_role_manager')
@@ -570,7 +584,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         """Return the list of current users.
 
         Verify it returns a test default configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getUsers(self.portal.acl_users)
         ['', 'test_user_1_']
@@ -585,7 +600,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         """Return the list of current groups.
 
         Verify it returns a test default configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.getGroups(self.portal.acl_users)
         ['Administrators', 'Reviewers']
@@ -609,22 +625,24 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         """Update my configuration based on form data.
 
         Verify it returns nothing. More testing is done in the integration file.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.manage_changeConfig()
 
         """
         if not REQUEST:
             return None
+        reqget = REQUEST.form.get
         try:
-            strip = int(REQUEST.form.get(stripDomainNamesKey, 1))
+            strip = int(reqget(stripDomainNamesKey, 1))
         except ValueError:
             strip = 1
         if strip < 0: strip = 0
         if strip > 2: strip = 2
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
-        formTokens = tuple(REQUEST.form.get(httpAuthzTokensKey, '').splitlines())
+        formTokens = tuple(reqget(httpAuthzTokensKey, '').splitlines())
         if tokens != formTokens:
             for ii in self.getMappings():
                 saveVals = {}
@@ -636,25 +654,27 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                 ii['values'] = saveVals
         # Save the form values
         self.manage_changeProperties({stripDomainNamesKey: strip,
-            stripDomainNamesListKey: REQUEST.form.get(stripDomainNamesListKey, ''),
-            httpRemoteUserKey: REQUEST.form.get(httpRemoteUserKey, ''),
-            httpCommonnameKey: REQUEST.form.get(httpCommonnameKey, ''),
-            httpDescriptionKey: REQUEST.form.get(httpDescriptionKey, ''),
-            httpEmailKey: REQUEST.form.get(httpEmailKey, ''),
-            httpLocalityKey: REQUEST.form.get(httpLocalityKey, ''),
-            httpStateKey: REQUEST.form.get(httpStateKey, ''),
-            httpCountryKey: REQUEST.form.get(httpCountryKey, ''),
-            httpAuthzTokensKey: REQUEST.form.get(httpAuthzTokensKey, ''),
-            httpSharingTokensKey: REQUEST.form.get(httpSharingTokensKey, ''),
-            httpSharingLabelsKey: REQUEST.form.get(httpSharingLabelsKey, '')})
-        return REQUEST.RESPONSE.redirect('%s/manage_config' % self.absolute_url())
+            stripDomainNamesListKey: reqget(stripDomainNamesListKey, ''),
+            httpRemoteUserKey: reqget(httpRemoteUserKey, ''),
+            httpCommonnameKey: reqget(httpCommonnameKey, ''),
+            httpDescriptionKey: reqget(httpDescriptionKey, ''),
+            httpEmailKey: reqget(httpEmailKey, ''),
+            httpLocalityKey: reqget(httpLocalityKey, ''),
+            httpStateKey: reqget(httpStateKey, ''),
+            httpCountryKey: reqget(httpCountryKey, ''),
+            httpAuthzTokensKey: reqget(httpAuthzTokensKey, ''),
+            httpSharingTokensKey: reqget(httpSharingTokensKey, ''),
+            httpSharingLabelsKey: reqget(httpSharingLabelsKey, '')})
+        return REQUEST.RESPONSE.redirect('%s/manage_config' %
+                                         self.absolute_url())
 
     security.declareProtected(ManageUsers, 'manage_changeMapping')
     def manage_changeMapping(self, REQUEST=None):
         """Update mappings based on form data.
 
         Verify it returns nothing. More testing is done in the integration file.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.manage_changeMapping()
         """
@@ -681,7 +701,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                     # set up all values, from property as check on incoming form
                     for kk in self.getProperty(httpAuthzTokensKey):
                         sets[jj]['values'][kk] = ''
-                    # set up all roles, so ones not in REQUEST.form have an entry
+                    # set up all roles, so ones not in REQUEST.form have
+                    # an entry
                     for kk in roles:
                         sets[jj]['roles'][kk['id']] = ''
             if match.group(1) == 'auth':
@@ -699,7 +720,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             elif sets[index]['roles'].has_key(match.group(1)):
                 sets[index]['roles'][match.group(1)] = REQUEST.form[ii]
         if len(sets) != len(authz):
-            return REQUEST.RESPONSE.redirect('%s/manage_authz' % self.absolute_url())
+            return REQUEST.RESPONSE.redirect('%s/manage_authz' %
+                                             self.absolute_url())
         # now process delete checkboxes
         deleteIds = REQUEST.form.get('delete_ids', [])
         # make sure deleteIds is a list on integers, in descending order
@@ -716,35 +738,34 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             except IndexError:
                 pass
         self.putMappings(sets)
-        return REQUEST.RESPONSE.redirect('%s/manage_authz' % self.absolute_url())
+        return REQUEST.RESPONSE.redirect('%s/manage_authz' %
+                                         self.absolute_url())
 
     security.declareProtected(ManageUsers, 'manage_addMapping')
     def manage_addMapping(self, REQUEST=None):
         """Add a mapping based on form data.
 
         Verify it returns nothing. More testing is done in the integration file.
-        >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+        >>> from Products.AutoUserMakerPASPlugin.auth import \
+                ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.manage_addMapping()
         """
         if not REQUEST:
             return None
         saveVals = self.getMapping()
-        jj = 0
         auth = REQUEST.form.get('auth')
         if not auth or len(auth) != len(self.getTokens()):
-            return REQUEST.RESPONSE.redirect('%s/manage_authz' % self.absolute_url())
+            return REQUEST.RESPONSE.redirect('%s/manage_authz' %
+                                             self.absolute_url())
         # loop through getTokens values, saving 'paired' setting
         # XXX: I'm not crazy about this, because a change in the tokens list
         # while another browser windows has the form open will result in the
         # wrong permissions getting assigned.
-        for ii in self.getTokens():
-            try:
-                saveVals['values'][ii] = auth[jj]
-            except Exception, err:
-                logger.warning("saveVales['values'][%s] = %s yeilds %s" % (ii, auth[jj], str(err)), exc_info=True)
-            jj += 1
-        # loop through getRoles ensures no input other than currently valied roles
+        for jj, ii in enumerate(self.getTokens()):
+            saveVals['values'][ii] = auth[jj]
+        # loop through getRoles ensures no input other than currently
+        # valid roles
         for ii in self.getRoles(self):
             saveVals['roles'][ii['id']] = REQUEST.form.get(ii['id'], '')
         users = self.getUsers(self)
@@ -756,6 +777,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             if ii in groups:
                 saveVals['groupid'].append(ii)
         self.addMappings(saveVals)
-        return REQUEST.RESPONSE.redirect('%s/manage_authz' % self.absolute_url())
+        return REQUEST.RESPONSE.redirect('%s/manage_authz' %
+                                         self.absolute_url())
 
 InitializeClass(ApacheAuthPluginHandler)
