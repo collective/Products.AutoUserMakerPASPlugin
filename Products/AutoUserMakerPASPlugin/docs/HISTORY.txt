@@ -1,0 +1,9 @@
+Changelog for AutoUserMakerPASPlugin
+
+    (name of developer listed in brackets)
+
+AutoUserMakerPASPlugin - 0.1 Unreleased
+
+    - Initial package structure.
+      [zopeskel]
+

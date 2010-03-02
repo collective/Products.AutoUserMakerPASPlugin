@@ -1,0 +1,32 @@
+<div tal:replace="structure context/manage_page_header">Header</div>
+<div tal:replace="structure context/manage_tabs">Tabs</div>
+
+<tal:block tal:omit-tag="" i18n:domain="AutoUserMakerPASPlugin">
+<h2 i18n:translate="heading_add_autousermakerpasplugin">Add Auto User Maker</h2>
+
+<p class="form-help" i18n:translate="help_install_handler">
+  To install the Auto User Maker, give it any Id and Title you like:
+</p>
+
+<form action="manage_addAutoUserMaker" method="POST">
+<table>
+<tr>
+   <td class="form-label" i18n:translate="heading_id"> Id </td>
+   <td> <input type="text" name="pluginId" /> </td>
+</tr>
+<tr>
+   <td class="form-label" i18n:translate="heading_title"> Title </td>
+   <td> <input type="text" name="title" /> </td>
+</tr>
+<tr>
+   <td colspan="2">
+   <div class="form-element">
+    <input type="submit" i18n:attributes="value" value="add handler"/>
+   </div>
+   </td>
+</tr>
+</table>
+</form>
+
+</tal:block>
+<div tal:replace="structure context/manage_page_footer">Footer</div>

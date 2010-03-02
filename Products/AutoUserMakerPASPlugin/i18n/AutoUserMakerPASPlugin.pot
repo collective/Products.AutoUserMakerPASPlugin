@@ -1,0 +1,131 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: AutoUserMakerPASPllugin\n"
+"POT-Creation-Date: June 1 11:00 2007\n"
+"PO-Revision-Date: 2007-06-11 11:10+0500\n"
+"Last-Translator: Alan Brenner <alan.brenner at ithaka.org>\n"
+"Language-Team: http://www.ithaka.org\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: zope/app/translation_files/extract.py\n"
+"Language-code: en\n"
+"Language-name: English\n"
+"Preferred-encodings: utf-8\n"
+"Domain: AutoUserMakerPASPlugin\n"
+
+msgid "heading_add_autousermakerpasplugin"
+msgstr "Add AutoUserMakerPASPlugin"
+
+msgid "heading_id"
+msgstr "ID"
+
+msgid "heading_title"
+msgstr "Title"
+
+msgid "heading_domain_name_stripping"
+msgstr "Domain Name Stripping"
+
+msgid "heading_user_setup_headers"
+msgstr "User Setup Headers"
+
+msgid "heading_user_authorization_headers"
+msgstr "User Authorization Headers"
+
+msgid "heading_add_role_mapping"
+msgstr "Add Role Mapping"
+
+msgid "heading_source_label"
+msgstr "Source"
+
+msgid "heading_roles_label"
+msgstr "Roles"
+
+msgid "heading_values_label"
+msgstr "Values"
+
+msgid "heading_edit_role_mapping"
+msgstr "Edit Role Mappings"
+
+msgid "heading_delete_label"
+msgstr "Delete"
+
+msgid "heading_add_apachepasplugin"
+msgstr "Add ApachePASPlugin"
+
+msgid "heading_id"
+msgstr "ID"
+
+msgid "heading_title"
+msgstr "Title"
+
+msgid "help_header_mapping"
+msgstr "HTTP Headers as made available by Apache/Shibboleth"
+
+msgid "help_install_handler"
+msgstr "Install ApachePASPlugin based plugin handler."
+
+msgid "help_values"
+msgstr "These values are python regular expressions that will be compiled as raw
+strings. See <a href='http://docs.python.org/lib/module-re.html'>the python re
+module documentation</a> and <a
+href='http://diveintopython.org/regular_expressions/index.html'>Dive Into
+Python's Regular Expressions chapter</a>."
+
+msgid "help_install_handler"
+msgstr "Install AutoUserMakerPASPlugin based plugin handler."
+
+msgid "description_http_remote_user"
+msgstr "User name (usually HTTP_X_REMOTE_USER)"
+
+msgid "description_http_commonname"
+msgstr "User's full name (HTTP_SHIB_PERSON_COMMONNAME)"
+
+msgid "description_http_description"
+msgstr "User's description (HTTP_SHIB_ORGPERSON_TITLE)"
+
+msgid "description_http_email"
+msgstr "User's email (HTTP_SHIB_INETORGPERSON_MAIL)"
+
+msgid "description_http_locality"
+msgstr "User's locality (HTTP_SHIB_ORGPERSON_LOCALITY)"
+
+msgid "description_http_state"
+msgstr "User's state (HTTP_SHIB_ORGPERSON_STATE)"
+
+msgid "description_http_county"
+msgstr "User's country (HTTP_SHIB_ORGPERSON_C)"
+
+msgid "description_dont_strip_domain_names"
+msgstr "Do not strip domain names from usernames."
+
+msgid "description_strip_all_domain_names"
+msgstr "Strip domain names from all usernames."
+
+msgid "description_strip_domain_name"
+msgstr "Strip domain names from all usernames in the domain(s) below. Enter one per line."
+
+msgid "description_shib_token_list"
+msgstr "Use the items below for global authorization/account mapping.
+<strong>Enter one per line.</strong> Examles include HTTP_X_REMOTE_USER,
+HTTP_SHIB_EP_PRINCIPALNAME, HTTP_SHIB_EP_ORGDN, and HTTP_SHIB_EP_ENTITLEMENT.
+If this maps to more than one user id, then this effectively declares a group."
+
+msgid "description_sharing_token_list"
+msgstr "Make the items below available for user sharing, when ShibbolethPermissions
+is installed. <strong>Enter one per line.</strong> Use the item in the second
+box as the label users see. Labels must be in the same order as the sources.
+Non-existant labels will use the source name. Examples are the same as the
+global authorization values, above."
+
+msgid "message_add_items"
+msgstr "Use the options tab above to add authorization items."
+
+msgid "Add"
+msgstr "Add"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "add handler"
+msgstr "add handler"

@@ -1,0 +1,5 @@
+0.8a1 (svn/unreleased)
+=====================
+
+ - copied from old-style product 0.7
+   [tom_gross]

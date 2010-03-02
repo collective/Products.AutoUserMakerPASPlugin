@@ -1,0 +1,158 @@
+<div tal:replace="structure here/manage_page_header">Header</div>
+
+<div tal:define="form_title string:Apache PAS Configuration"
+    tal:replace="structure here/manage_tabs"> TABS </div>
+
+<tal:block tal:omit-tag="" i18n:domain="ApachePASPlugin">
+
+  <h3 i18n:translate="heading_domain_name_stripping">Domain Name Stripping</h3>
+  <form action="manage_changeConfig"
+        tal:attributes="action python:here.absolute_url()+'/manage_changeConfig'"
+        tal:define="config context/getConfig"
+        method="POST">
+
+    <p>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] == 0">
+        <input type="radio" id="strip_domain_names0" name="strip_domain_names"
+               checked="checked" value="0"/>
+      </tal:use_session>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] != 0">
+        <input type="radio" id="strip_domain_names0" name="strip_domain_names"
+               value="0"/>
+      </tal:use_session>
+      <label for="strip_domain_names0" i18n:translate="description_dont_strip_domain_names">
+        Do not strip domain names from usernames.
+      </label>
+    </p>
+    <p>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] == 1">
+        <input type="radio" id="strip_domain_names1" name="strip_domain_names"
+               checked="checked" value="1"/>
+      </tal:use_session>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] != 1">
+        <input type="radio" id="strip_domain_names1" name="strip_domain_names"
+               value="1"/>
+      </tal:use_session>
+      <label for="strip_domain_names1" i18n:translate="description_strip_all_domain_names">
+        Strip domain names from all usernames.
+      </label>
+    </p>
+    <p>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] == 2">
+        <input type="radio" id="strip_domain_names2" name="strip_domain_names"
+               checked="checked" value="2" />
+      </tal:use_session>
+      <tal:use_session tal:condition="python:config['strip_domain_names'] != 2">
+        <input type="radio" id="strip_domain_names2" name="strip_domain_names"
+               value="2" />
+      </tal:use_session>
+      <label i18n:translate="description_strip_domain_name">
+        Strip domain names from all usernames in the domain(s) below. <strong>Enter one per line.</strong>
+      </label>
+    </p>
+    <p>
+      <textarea name="strip_domain_name_list" rows="10" cols="50"
+                tal:content="python:'\n'.join(config['strip_domain_name_list'])">
+      </textarea>
+    </p>
+
+    <h3 i18n:translate="heading_user_setup_headers">User Setup Headers</h3>
+    <p class="form-help" i18n:translate="help_header_mapping">
+      HTTP Headers as made available by Apache/Shibboleth. See your Shibboleth's
+      AAP.xml. Enter one per line. User setup will use the first available value.
+    </p>
+    <p>
+      <textarea name="http_remote_user" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_remote_user'])">USER
+      </textarea>
+      <label for="http_remote_user" i18n:translate="description_http_remote_user">
+        User ID (for example, HTTP_X_REMOTE_USER)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_commonname" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_commonname'])">NAME
+      </textarea>
+      <label for="http_commonname" i18n:translate="description_http_commonname">
+        User's full name (HTTP_SHIB_PERSON_COMMONNAME)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_description" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_description'])">DESC
+      </textarea>
+      <label for="http_description" i18n:translate="description_http_description">
+        User's description (HTTP_SHIB_ORGPERSON_TITLE)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_email" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_email'])">EMAILS
+      </textarea>
+      <label for="http_email" i18n:translate="description_http_email">
+        User's email (HTTP_SHIB_INETORGPERSON_MAIL)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_locality" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_locality'])">LOCAL
+      </textarea>
+      <label for="http_locality" i18n:translate="description_http_locality">
+        User's locality (HTTP_SHIB_ORGPERSON_LOCALITY)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_state" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_state'])">STATE
+      </textarea>
+      <label for="http_state" i18n:translate="description_http_state">
+        User's state (HTTP_SHIB_ORGPERSON_STATE)
+      </label>
+    </p>
+    <p>
+      <textarea name="http_country" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['http_country'])">COUNTY
+      </textarea>
+      <label for="http_country" i18n:translate="description_http_country">
+        User's country (HTTP_SHIB_ORGPERSON_C)
+      </label>
+    </p>
+
+    <h3 i18n:translate="heading_user_mapping_headers">User Mapping Headers</h3>
+    <p>
+      <label for="http_authz_tokens" i18n:translate="description_shib_token_list">
+        Use the items below for global authorization/account mapping.
+        <strong>Enter one per line.</strong> Examles include HTTP_X_REMOTE_USER,
+        HTTP_SHIB_EP_PRINCIPALNAME, HTTP_SHIB_EP_ORGDN, and HTTP_SHIB_EP_ENTITLEMENT.
+        If this maps to more than one user id, then this effectively declares a group.
+      </label><br />
+      <textarea name="http_authz_tokens" rows="10" cols="50"
+                tal:content="python:'\n'.join(config['http_authz_tokens'])">
+      </textarea>
+    </p>
+
+    <h3 i18n:translate="heading_user_sharing_headers">User Sharing Headers</h3>
+    <p>
+      <label for="http_sharing_tokens" i18n:translate="description_sharing_token_list">
+        Make the items below available for user sharing, <em>when ShibbolethPermissions
+        is installed</em>. <strong>Enter one per line.</strong> Use the item in the
+        second box as the label users see. Labels must be in the same order as
+        the sources. Non-existant labels will use the source name. Examples are
+        the same as the global authorization values, above.
+      </label><br />
+      <textarea name="http_sharing_tokens" rows="10" cols="50"
+                tal:content="python:'\n'.join(config['http_sharing_tokens'])">
+      </textarea>
+      <textarea name="http_sharing_labels" rows="10" cols="50"
+                tal:content="python:'\n'.join(config['http_sharing_labels'])">
+      </textarea>
+    </p>
+
+    <input type="submit" i18n:domain="plone"
+           i18n:attributes="value" value="Save" />
+
+  </form>
+
+</tal:block>
+
+<div tal:replace="structure here/manage_page_footer"/>

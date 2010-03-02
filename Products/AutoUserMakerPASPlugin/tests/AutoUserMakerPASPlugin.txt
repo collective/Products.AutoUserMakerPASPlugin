@@ -1,0 +1,346 @@
+======================
+AutoUserMakerPASPlugin
+======================
+
+This file is mostly about describing how to setup AutoUserMakerPASPlugin into a
+Zope instance.
+
+We begin by using the utility method for adding AutoUserMakerPASPlugin to an
+existing acl_users.
+
+    >>> try:
+    ...     from AutoUserMakerPASPlugin.tests import utils
+    ... except ImportError:
+    ...     from Products.AutoUserMakerPASPlugin.tests import utils
+
+Make sure trying to do this on an object without any acl_users fails.
+
+    >>> utils.addAutoUserMakerPASPlugin(object())
+    Traceback (most recent call last):
+    ...
+    LookupError: No acl_users can be acquired or otherwise found.
+
+Now, let's actually get a PAS to use.
+
+    >>> pas = self.portal.acl_users
+    >>> pas
+    <PluggableAuthService at /plone/acl_users>
+
+And make sure we can set up our plugin in the PAS instance.
+
+    >>> apache = utils.addAutoUserMakerPASPlugin(self.portal)
+    >>> apache
+    <ApacheAuthPluginHandler at /plone/acl_users/AutoUserMakerPASPlugin>
+
+Extraction And Authentication
+-----------------------------
+
+The next step is to make sure credentials can be extracted and authenticated.
+
+    >>> class MockRequest:
+    ...    def __init__(self, environ={}):
+    ...        self.environ = environ
+
+    >>> request = MockRequest()
+    >>> apache.extractCredentials(request) is None
+    True
+
+Now we fudge an apache header.
+
+    >>> request.environ['HTTP_X_REMOTE_USER'] = 'foo'
+    >>> config = apache.extractCredentials(request)
+    >>> config['user_id']
+    'foo'
+
+If the apache-based login machinery returns an LDAP domain along with
+the username, we should just extract the username.
+
+    >>> request.environ['HTTP_X_REMOTE_USER'] = 'foo@some.ldap'
+    >>> config = apache.extractCredentials(request)
+    >>> config['user_id']
+    'foo'
+
+However, if the *Strip domain names from usernames* option is off, we
+should extract the whole thing.
+
+    >>> page = apache.manage_changeProperties({'strip_domain_names': 0})
+    >>> config = apache.extractCredentials(request)
+    >>> config['user_id']
+    'foo@some.ldap'
+    >>> page = apache.manage_changeProperties({'strip_domain_names': 1})
+
+The plugin has a property (accessible using the properties tab) for
+required roles.
+
+    >>> 'required_roles' in apache.propertyIds()
+    True
+    >>> apache.manage_changeProperties(required_roles=['SuperUser'])
+    >>> apache.requiredRoles()
+    ('SuperUser',)
+
+Of course, if ``required_roles`` has been defined, then the extraction
+plugin must determine that the forwarded user has those roles.  And, since
+the *foo* user hasn't been given any roles yet, the extraction will return
+None.
+
+    >>> apache.extractCredentials(request) is None
+    True
+
+Next we add roles for the user.
+
+    >>> rolemanager = pas.portal_role_manager
+    >>> rolemanager.addRole('SuperUser')
+    >>> rolemanager.assignRoleToPrincipal('SuperUser', 'foo')
+    True
+
+Now that the PAS instance thinks the *foo* user has the *SuperUser* role
+we should be able to extract appropriate credentials.
+
+    >>> user = apache.extractCredentials(request)
+    >>> user.getId()
+    'foo'
+
+There is another way apart from ``required_roles``. You can add user
+IDs to a property ``login_users``. First let's make sure our current
+user cannot log in anymore:
+
+    >>> apache.manage_changeProperties(required_roles=['SomethingElse'])
+    >>> apache.extractCredentials(request) is None
+    True
+
+If we add the user ID to ``login_users``, he can log in again.
+
+    >>> apache.manage_changeProperties(login_users=['foo'])
+    >>> config = apache.extractCredentials(request)
+    >>> config['user_id']
+    'foo'
+
+Handy output function:
+    >>> def inOrder(config):
+    ...     keys = config.keys()
+    ...     keys.sort()
+    ...     for ii in keys: print "'%s':%s" % (ii, str(config[ii]))
+
+Now let's fudge an apache header with a full set of information comming from
+Shibboleth. When this is provided, AutoUserMakerPASPlugin will populate more
+info in the Plone user it creates (which above is just a user id).
+
+    >>> request = MockRequest({'HTTP_X_REMOTE_USER': 'foo@test.org',
+    ...                        'HTTP_SHIB_PERSON_COMMONNAME': 'Test Foo',
+    ...                        'HTTP_SHIB_ORGPERSON_TITLE': 'tester',
+    ...                        'HTTP_SHIB_INETORGPERSON_MAIL': 'foo@test.org',
+    ...                        'HTTP_SHIB_ORGPERSON_LOCALITY': 'Princeton',
+    ...                        'HTTP_SHIB_ORGPERSON_STATE': 'NJ',
+    ...                        'HTTP_SHIB_ORGPERSON_C': 'US'})
+    >>> inOrder(apache.extractCredentials(request))
+    '_getMappings':[]
+    'description':tester
+    'email':foo@test.org
+    'filters':{}
+    'fullname':Test Foo
+    'localperms':{}
+    'location':Princeton, NJ, US
+    'user_id':foo
+
+
+ZMI Configuration Testing
+-------------------------
+
+Let's set up a pair of form replication classes:
+    >>> class MockResponse:
+    ...     def __init__(self):
+    ...         self.url = ''
+    ...     def redirect(self, url):
+    ...         self.url = url
+    >>> class MockForm:
+    ...     def __init__(self, form={}):
+    ...         self.form = form
+    ...         self.RESPONSE = MockResponse()
+
+Now, let's check the default configuration:
+
+    >>> inOrder(apache.getConfig())
+    'http_authz_tokens':()
+    'http_commonname':('HTTP_SHIB_PERSON_COMMONNAME',)
+    'http_country':('HTTP_SHIB_ORGPERSON_C',)
+    'http_description':('HTTP_SHIB_ORGPERSON_TITLE',)
+    'http_email':('HTTP_SHIB_INETORGPERSON_MAIL',)
+    'http_locality':('HTTP_SHIB_ORGPERSON_LOCALITY',)
+    'http_remote_user':('HTTP_X_REMOTE_USER',)
+    'http_sharing_labels':()
+    'http_sharing_tokens':()
+    'http_state':('HTTP_SHIB_ORGPERSON_STATE',)
+    'strip_domain_name_list':()
+    'strip_domain_names':1
+
+Test changing the configuration like the ZMI config form does. First build a
+pseudo REQUEST object, then get the results and print in order.
+
+    >>> request = MockForm({"strip_domain_names": 0,
+    ...                     "strip_domain_name_list": 'test.org',
+    ...                     "http_remote_user": 'HTTP_TEST_USER',
+    ...                     "http_commonname": 'HTTP_TEST_COMMONNAME',
+    ...                     "http_description": 'HTTP_TEST_TITLE',
+    ...                     "http_email": 'HTTP_TEST_EMAIL',
+    ...                     "http_locality": 'HTTP_TEST_TOWN',
+    ...                     "http_state": 'HTTP_TEST_STATE',
+    ...                     "http_country": 'HTTP_TEST_COUNTRY',
+    ...                     "http_authz_tokens": 'HTTP_TEST_USER',
+    ...                     "http_sharing_tokens": 'HTTP_TEST_USER',
+    ...                     "http_sharing_labels": 'TEST_TITLE'})
+    >>> apache.manage_changeConfig(request)
+    >>> inOrder(apache.getConfig())
+    'http_authz_tokens':('HTTP_TEST_USER',)
+    'http_commonname':('HTTP_TEST_COMMONNAME',)
+    'http_country':('HTTP_TEST_COUNTRY',)
+    'http_description':('HTTP_TEST_TITLE',)
+    'http_email':('HTTP_TEST_EMAIL',)
+    'http_locality':('HTTP_TEST_TOWN',)
+    'http_remote_user':('HTTP_TEST_USER',)
+    'http_sharing_labels':('TEST_TITLE',)
+    'http_sharing_tokens':('HTTP_TEST_USER',)
+    'http_state':('HTTP_TEST_STATE',)
+    'strip_domain_name_list':('test.org',)
+    'strip_domain_names':0
+
+Now lets do a small test of junk input, which should result in no change from
+the above output.
+
+    >>> request = MockForm({'no_such_field': 'junk'})
+    >>> inOrder(apache.getConfig())
+    'http_authz_tokens':('HTTP_TEST_USER',)
+    'http_commonname':('HTTP_TEST_COMMONNAME',)
+    'http_country':('HTTP_TEST_COUNTRY',)
+    'http_description':('HTTP_TEST_TITLE',)
+    'http_email':('HTTP_TEST_EMAIL',)
+    'http_locality':('HTTP_TEST_TOWN',)
+    'http_remote_user':('HTTP_TEST_USER',)
+    'http_sharing_labels':('TEST_TITLE',)
+    'http_sharing_tokens':('HTTP_TEST_USER',)
+    'http_state':('HTTP_TEST_STATE',)
+    'strip_domain_name_list':('test.org',)
+    'strip_domain_names':0
+
+Changing the configuration above allows testing the user mappings, by setting
+the http_remote_user. Set up foo with the Manager role. Set up test to map to
+the test user created by PloneTestCase. Set up bar as a member of the Reviewers
+group.
+
+    >>> request = MockForm({'auth': ['foo',], 'Manager': 1})
+    >>> apache.manage_addMapping(request)
+    >>> request = MockForm({'auth': ['test',], 'userid': 'test_user_1_'})
+    >>> apache.manage_addMapping(request)
+    >>> request = MockForm({'auth': ['bar',], 'groupid': ['Reviewers',]})
+    >>> apache.manage_addMapping(request)
+
+    >>> def dumpMappings(mappings):
+    ...     for ii in mappings:
+    ...         inOrder(ii)
+
+    >>> dumpMappings(apache.getMappings())
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': 1, 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'foo'}
+    'version':1
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':test_user_1_
+    'values':{'HTTP_TEST_USER': 'test'}
+    'version':1
+    'groupid':['Reviewers']
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'bar'}
+    'version':1
+
+Now we have 3 user mappings. Let's delete foo.
+
+    >>> request = MockForm({'auth-0': ['foo',],
+    ...                     'userid-0': '',
+    ...                     'Manager-0': 'on',
+    ...                     'groupid-0': ['',],
+    ...                     'auth-1': ['test',],
+    ...                     'userid-1': 'test_user_1_',
+    ...                     'groupid-1': ['',],
+    ...                     'auth-2': ['bar',],
+    ...                     'userid-2': '',
+    ...                     'groupid-2': ['Reviewers',],
+    ...                     'delete_ids': [0,]})
+    >>> apache.manage_changeMapping(request)
+    >>> dumpMappings(apache.getMappings())
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':test_user_1_
+    'values':{'HTTP_TEST_USER': 'test'}
+    'version':1
+    'groupid':['Reviewers']
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'bar'}
+    'version':1
+
+And then there were 2. Let's change test to foo, and make bar an Administrator.
+
+    >>> request = MockForm({'auth-0': ['foo',],
+    ...                     'userid-0': 'test_user_1_',
+    ...                     'groupid-0': ['',],
+    ...                     'auth-1': ['bar',],
+    ...                     'userid-1': '',
+    ...                     'groupid-1': ['Administrators',]})
+    >>> apache.manage_changeMapping(request)
+    >>> dumpMappings(apache.getMappings())
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':test_user_1_
+    'values':{'HTTP_TEST_USER': 'foo'}
+    'version':1
+    'groupid':['Administrators']
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'bar'}
+    'version':1
+
+Now for a few tests of things that should not change anything. Let's try updates
+with fewer and more mappings defined than PAS has. The results for both tests
+should be the same as above. This keeps user A from clobbering user B's changes,
+at least as far as adding or deleting mapping rules.
+
+    >>> request = MockForm({'auth-0': ['foo',],
+    ...                     'userid-0': ['', ],
+    ...                     'groupid-0': ['',]})
+    >>> apache.manage_changeMapping(request)
+    >>> dumpMappings(apache.getMappings())
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':test_user_1_
+    'values':{'HTTP_TEST_USER': 'foo'}
+    'version':1
+    'groupid':['Administrators']
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'bar'}
+    'version':1
+
+    >>> request = MockForm({'auth-0': ['foo',],
+    ...                     'userid-0': ['', ],
+    ...                     'groupid-0': ['',],
+    ...                     'auth-1': ['bar',],
+    ...                     'userid-1': ['', ],
+    ...                     'groupid-1': ['Administrators',],
+    ...                     'auth-2': ['bad',],
+    ...                     'userid-2': ['', ],
+    ...                     'groupid-2': ['Administrators',]})
+    >>> apache.manage_changeMapping(request)
+    >>> dumpMappings(apache.getMappings())
+    'groupid':[]
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':test_user_1_
+    'values':{'HTTP_TEST_USER': 'foo'}
+    'version':1
+    'groupid':['Administrators']
+    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'userid':
+    'values':{'HTTP_TEST_USER': 'bar'}
+    'version':1
+

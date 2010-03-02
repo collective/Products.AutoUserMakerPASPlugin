@@ -1,0 +1,126 @@
+======================
+AutoUserMakerPASPlugin
+======================
+
+Here, we're going to try a few pseudo-browser tests.
+
+We begin by using the utility method for adding AutoUserMakerPASPlugin to an
+existing acl_users.
+
+    >>> try:
+    ...     from AutoUserMakerPASPlugin.tests import utils
+    ... except ImportError:
+    ...     from Products.AutoUserMakerPASPlugin.tests import utils
+
+And make sure we can set up our plugin in the PAS instance.
+
+    >>> apache = utils.addAutoUserMakerPASPlugin(self.portal)
+    >>> apache
+    <ApacheAuthPluginHandler at /plone/acl_users/AutoUserMakerPASPlugin>
+
+Now we set up the browser. Then we make sure the default user is a manager, and
+add the login header. By telling the testbrowser not to handle errors, we will
+get more output in the event one happens.
+
+    >>> from Products.Five.testbrowser import Browser
+    >>> from Products.PloneTestCase import PloneTestCase as ptc
+    >>> self.setRoles('Manager')
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic %s:%s' % (ptc.default_user, ptc.default_password))
+    >>> browser.handleErrors = False
+
+
+Configuration Page Testing
+--------------------------
+
+Now let's verify the 'strip these domain names' gets set.
+
+    >>> browser.open(apache.absolute_url() + '/manage_config')
+    >>> browser.getControl(name='strip_domain_names').getControl(value='2').selected = True
+    >>> browser.getControl(name='strip_domain_name_list').value = 'test.org'
+    >>> browser.getControl('Save').click()
+    >>> browser.getControl(name='strip_domain_name_list').value
+    'test.org'
+
+Let's make sure that a user will see an error message when the mapping headers
+have not been set.
+
+    >>> browser.open(apache.absolute_url() + '/manage_authz')
+    >>> browser.contents.find('Use the options tab above to add authorization items') > -1
+    True
+
+Now we verify setting the user mapping header and sharing headers. We must do
+this before trying to add mappings.
+
+    >>> browser.open(apache.absolute_url() + '/manage_config')
+    >>> browser.getControl(name='http_authz_tokens').value = 'HTTP_X_REMOTE_USER'
+    >>> browser.getControl(name='http_sharing_tokens').value = 'HTTP_X_REMOTE_USER'
+    >>> browser.getControl(name='http_sharing_labels').value = 'User ID'
+    >>> browser.getControl('Save').click()
+    >>> browser.getControl(name='http_authz_tokens').value
+    'HTTP_X_REMOTE_USER'
+    >>> browser.getControl(name='http_sharing_tokens').value
+    'HTTP_X_REMOTE_USER'
+    >>> browser.getControl(name='http_sharing_labels').value
+    'User ID'
+
+
+Mappings Page Testing
+---------------------
+
+Let's add an attribute mappings, starting with a user 'test' that is mapped to
+the Manager role.
+
+    >>> browser.open(apache.absolute_url() + '/manage_authz')
+    >>> browser.getControl(name='auth:list').value = 'test'
+    >>> browser.getControl(name='Manager').value = 'on'
+    >>> browser.getControl('Add').click()
+    >>> browser.getControl(name='auth-0:list').value
+    'test'
+    >>> control = browser.getControl(name='Manager-0')
+    >>> control.disabled
+    False
+
+Now add an 'admin' user who is a member of the 'Administrators' group.
+
+    >>> browser.getControl(name='auth:list').value = 'admin'
+    >>> browser.getControl(name='groupid:list').value = ['Administrators',]
+    >>> browser.getControl('Add').click()
+    >>> browser.getControl(name='auth-0:list').value
+    'test'
+    >>> browser.getControl(name='auth-1:list').value
+    'admin'
+    >>> control = browser.getControl(name='groupid-1:list')
+    >>> control.value
+    ['Administrators']
+
+Now add a user who logs in as 'deleteme', who gets made the PloneTestCase user.
+
+    >>> browser.getControl(name='auth:list').value = 'deleteme'
+    >>> browser.getControl(name='userid').value = [ptc.default_user,]
+    >>> browser.getControl('Add').click()
+    >>> browser.getControl(name='auth-0:list').value
+    'test'
+    >>> browser.getControl(name='auth-1:list').value
+    'admin'
+    >>> browser.getControl(name='auth-2:list').value
+    'deleteme'
+    >>> browser.getControl(name='userid-2').value
+    ['test_user_1_']
+
+Make sure we only have 3 users.
+
+    >>> try:
+    ...     browser.getControl(name='auth-3:list').value
+    ... except LookupError:
+    ...     print 'good'
+    ... else:
+    ...     print 'bad'
+    good
+
+And finally delete a row.
+
+    >>> browser.getControl(name='delete_ids:list').getControl(value='2').selected = True
+    >>> browser.getControl('Save').click()
+    >>> browser.contents.find('deleteme') == -1
+    True

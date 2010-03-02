@@ -1,0 +1,175 @@
+<div tal:replace="structure here/manage_page_header">Header</div>
+
+<div tal:define="form_title string:Apache PAS Configuration"
+    tal:replace="structure here/manage_tabs"> TABS </div>
+
+<tal:block i18n:domain="ApachePASPlugin"
+           tal:define="listRoleInfo python:context.getRoles(context);
+                       listAuthzMappings python:context.getMappings();
+                       listUsers python:context.getUsers(context);
+                       listGroups python:context.getGroups(context);
+                       config context/getConfig">
+
+  <tal:use_session tal:condition="python:config['http_authz_tokens']">
+    <h3 i18n:translate="heading_add_role_mapping">Add Role Mapping</h3>
+    <form action="manage_addMapping"
+          tal:attributes="action python:here.absolute_url()+'/manage_addMapping'"
+          method="POST">
+      <table width="100%" cellpadding="2" cellspacing="0">
+        <tr>
+          <th i18n:translate="heading_source_label" colspan="1"
+              tal:attributes="colspan python:len(config['http_authz_tokens'])">Source</th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_roles_label" colspan="1"
+              tal:attributes="colspan python:len(listRoleInfo)">Roles</th>
+          <th colspan="2">&nbsp;</th>
+        </tr>
+        <tr>
+          <th i18n:translate="heading_values_label" colspan="1"
+              tal:attributes="colspan python:len(config['http_authz_tokens'])">Values</th>
+          <th>&nbsp;</th>
+          <th class="form-text" tal:repeat="role listRoleInfo">
+            <label tal:content="role/id">ROLE</label>
+          </th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_users_label">User</th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_groups_label">Group(s)</th>
+        </tr>
+        <tr class="row-hilite">
+          <td class="form-text" tal:repeat="col python:config['http_authz_tokens']">
+            <label tal:content="col">SOURCE</label>
+            <input name="auth:list" cols="30"/>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text" tal:repeat="role listRoleInfo">
+            <input type="checkbox" name="role" tal:attributes="name role/id" />
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text">
+            <select name="userid">
+              <tal:block tal:repeat="userid listUsers">
+                <option tal:content="userid">USER</option>
+              </tal:block>
+            </select>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text">
+            <select name="groupid:list" multiple="on">
+              <tal:block tal:repeat="groupid listGroups">
+                <option tal:content="groupid">GROUP</option>
+              </tal:block>
+            </select>
+          </td>
+        </tr>
+      </table>
+      <p class="form-help" i18n:translate="help_values">
+        These values are python regular expressions that will be compiled
+        as raw strings. See <a href="http://docs.python.org/lib/module-re.html">the
+        python re module documentation</a> and <a href="http://diveintopython.org/regular_expressions/index.html">Dive
+        Into Python's Regular Expressions chapter</a>. The member role is
+        always given. To map an existing user to a Shibboleth user, select
+        the existing user id from the drop down list. In this case, roles
+        given here are ignored (the Shibboleth user gets the already
+        existing Plone user's roles).
+      </p>
+      <input type="submit" i18n:domain="plone"
+             i18n:attributes="value" value="Add" />
+    </form>
+  </tal:use_session>
+  <tal:use_session tal:condition="python:not config['http_authz_tokens']">
+    <p i18n:translate="message_add_items">
+      Use the options tab above to add authorization items.
+    </p>
+  </tal:use_session>
+
+  <tal:use_session tal:condition="python:listAuthzMappings">
+    <h3 i18n:translate="heading_edit_role_mapping">Edit Role Mappings</h3>
+    <form action="manage_changeMapping"
+          tal:attributes="action python:here.absolute_url()+'/manage_changeMapping'"
+          method="POST">
+      <table width="100%" cellpadding="2" cellspacing="0">
+        <tr>
+          <th i18n:translate="heading_source_label" colspan="1"
+              tal:attributes="colspan python:len(config['http_authz_tokens'])">Source</th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_roles_label" colspan="1"
+              tal:attributes="colspan python:len(listRoleInfo)">Roles</th>
+          <th colspan="4">&nbsp;</th>
+        </tr>
+        <tr>
+          <th i18n:translate="heading_values_label" colspan="1"
+              tal:attributes="colspan python:len(config['http_authz_tokens'])">Values</th>
+          <th>&nbsp;</th>
+          <th align="left" tal:repeat="info listRoleInfo">
+            <label tal:content="info/id">ROLE</label>
+          </th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_users_label">User</th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_groups_label">Group(s)</th>
+          <th>&nbsp;</th>
+          <th i18n:translate="heading_delete_label">Delete</th>
+        </tr>
+
+        <tr class="row-hilite"
+          tal:repeat="row python:range(len(listAuthzMappings))"
+          tal:attributes="class python:repeat['row'].odd() and 'row-normal' or default">
+          <td class="form-text" tal:repeat="col python:config['http_authz_tokens']">
+            <label tal:content="col">SOURCE</label>
+            <input name="auth:list" cols="30" value="DATA"
+                   tal:attributes="name python:'auth-%d:list' % row;
+                                   value python:context.getValue(listAuthzMappings,row,'values',col)"/>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text" tal:repeat="role listRoleInfo">
+            <tal:block tal:define="state python:context.getValue(listAuthzMappings,row,'roles',role['id'])">
+              <tal:use_session tal:condition="python:state=='on'">
+                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], row)" checked="checked" />
+              </tal:use_session>
+              <tal:use_session tal:condition="python:state!='on'">
+                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], row)" />
+              </tal:use_session>
+            </tal:block>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text">
+            <select name="userid" tal:attributes="name python:'userid-%d' % row">
+              <tal:block tal:repeat="userid listUsers">
+                <tal:use_session tal:condition="python:listAuthzMappings[row]['userid'] == userid">
+                  <option selected="selected" tal:content="userid">USER</option>
+                </tal:use_session>
+                <tal:use_session tal:condition="python:listAuthzMappings[row]['userid'] != userid">
+                  <option tal:content="userid">USER</option>
+                </tal:use_session>
+              </tal:block>
+            </select>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text">
+            <select name="groupid" tal:attributes="name python:'groupid-%d:list' % row" multiple="on">
+              <tal:block tal:repeat="groupid listGroups">
+                <tal:use_session tal:condition="python:groupid in listAuthzMappings[row]['groupid']">
+                  <option selected="selected" tal:content="groupid">GROUP</option>
+                </tal:use_session>
+                <tal:use_session tal:condition="python:groupid not in listAuthzMappings[row]['groupid']">
+                  <option tal:content="groupid">GROUP</option>
+                </tal:use_session>
+              </tal:block>
+            </select>
+          </td>
+          <th>&nbsp;</th>
+          <td class="form-text">
+            <input type="checkbox" name="delete_ids:list" value="DELETE_ID" tal:attributes="value row" />
+          </td>
+        </tr>
+      </table>
+
+      <input type="submit" i18n:domain="plone"
+             i18n:attributes="value" value="Save" />
+    </form>
+  </tal:use_session>
+
+</tal:block>
+
+<div tal:replace="structure here/manage_page_footer"/>
