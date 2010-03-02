@@ -19,7 +19,6 @@ Zope instances, but must have unique DNS names.
 __revision__ = "0.2"
 
 from mod_python import apache
-import os
 import re
 import urllib
 
@@ -41,7 +40,6 @@ def fixuphandler(req):
         req.headers_in['X_REMOTE_USER'] = req.subprocess_env['REMOTE_USER']
     # Build the reverse proxy request URL, and tell apache to use it.
     sHost = req.headers_in['Host']
-    lParts = req.uri.split('/')
     req.uri = "http://%s/VirtualHostBase/https/%s:443/%s/VirtualHostRoot%s" % \
         (_dHosts[sHost], sHost, _dPaths[sHost], urllib.quote(req.uri))
     req.proxyreq = apache.PROXYREQ_REVERSE

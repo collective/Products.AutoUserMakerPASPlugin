@@ -9,27 +9,20 @@ import os
 import unittest
 from zope.testing import doctest
 from Testing import ZopeTestCase as ztc
-from Products.PloneTestCase import PloneTestCase as ptc
-from Globals import package_home
-try:
-    from AutoUserMakerPASPlugin import aum_globals
-    package = 'AutoUserMakerPASPlugin'
-except ImportError:
-    from Products.AutoUserMakerPASPlugin import aum_globals
-    package = 'Products.AutoUserMakerPASPlugin'
+import Products.PloneTestCase.PloneTestCase as ptc
 
 ptc.setupPloneSite()
 ptc.installProduct('AutoUserMakerPASPlugin')
 
 def listDoctests():
-    home = package_home(aum_globals)
-    return [ii for ii in glob.glob(os.path.sep.join([home + '/tests', '*.txt']))]
+    home = os.path.dirname(__file__)
+    return [ii for ii in glob.glob(os.path.sep.join([home, '*.txt']))]
 
 def test_suite():
     files = listDoctests()
     tests = [ztc.FunctionalDocFileSuite('tests/' + os.path.basename(filename),
-                                        test_class=ptc.PloneTestCase,
-                                        package=package,
+                                        test_class=ptc.FunctionalTestCase,
+                                        package='Products.AutoUserMakerPASPlugin',
                                         optionflags=doctest.REPORT_ONLY_FIRST_FAILURE)
              for filename in files]
     return unittest.TestSuite(tests)

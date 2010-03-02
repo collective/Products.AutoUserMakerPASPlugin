@@ -3,26 +3,27 @@
 __revision__ = "0.4"
 
 from random import choice
-import pickle
 import re
+import string
 
+from persistent.list import PersistentList
 from AccessControl import ClassSecurityInfo
 from Globals import InitializeClass
 from OFS.PropertyManager import PropertyManager
-from OFS.SimpleItem import SimpleItem
+
 from Products.CMFCore.utils import getToolByName
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.PluggableAuthService.interfaces.plugins \
-    import IAuthenticationPlugin, IExtractionPlugin, IRoleAssignerPlugin, \
-           IRolesPlugin, IUserAdderPlugin
+from Products.PluggableAuthService.interfaces.plugins import (
+    IAuthenticationPlugin, IExtractionPlugin, IRoleAssignerPlugin,
+    IRolesPlugin, IUserAdderPlugin)
 from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
-from persistent.list import PersistentList
 
 try:
     from Products.PluggableAuthService import _SWALLOWABLE_PLUGIN_EXCEPTIONS
+    _SWALLOWABLE_PLUGIN_EXCEPTIONS # pyflakes
 except ImportError:  # in case that private const goes away someday
     _SWALLOWABLE_PLUGIN_EXCEPTIONS = (NameError, AttributeError, KeyError, TypeError, ValueError)
 
@@ -40,6 +41,8 @@ httpSharingTokensKey = 'http_sharing_tokens'
 httpSharingLabelsKey = 'http_sharing_labels'
 usernameKey = 'user_id'
 
+PWCHARS = string.letters + string.digits + string.punctuation
+
 class AutoUserMakerPASPlugin(BasePlugin):
     """An authentication plugin that expects a mapping like ExtractionPlugin
     returns, makes the user specified therein, gives him the Member role so
@@ -56,37 +59,23 @@ class AutoUserMakerPASPlugin(BasePlugin):
     security = ClassSecurityInfo()
 
     def __init__(self, pluginId, title=None):
-        BasePlugin.__init__(self, pluginId, title)
         self.id = pluginId
         self.title = title
 
     security.declarePrivate('authenticateCredentials')
     def authenticateCredentials(self, credentials):
         """See class's docstring and IAuthenticationPlugin."""
-        #logger.info("authenticateCredentials(%r)" % repr(credentials))
         mappings = credentials.pop('_getMappings', [])
-
         userId = credentials.get(usernameKey, None)
-        #logger.info("user_id = %s" % str(userId))
+
         if userId is not None and self._getPAS() is not None and \
             self._getPAS().getUserById(userId) is None:
             # Make a user with id `userId`, and assign him at least the Member
             # role, since user doesn't exist.
 
             def generatePassword():
-                """Return a random password, not necessarily easy to type or remember."""
-                # I repeat RegistrationTool.generatePassword() here because
-                # I don't want this product dependent on Plone. It could
-                # conceivably be useful with just Zope. We might as well use the
-                # same typo avoidance, though, in case somebody decides to stop
-                # delegating auth once they've already started.
-                chars = 'ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
-                return ''.join([choice(chars) for ii in range(6)])
-
-            # I could just call self._getPAS()._doAddUser(...), but that's
-            # private and not part of the IPluggableAuthService interface. It
-            # might break someday. So the following is based on
-            # PluggableAuthService._doAddUser():
+                """ Return a obfuscated password never used for login """
+                return ''.join([choice(PWCHARS) for ii in range(10)])
 
             # Make sure we actually have user adders and role assigners. It
             # would be ugly to succeed at making the user but be unable to
@@ -218,11 +207,12 @@ class AutoUserMakerPASPlugin(BasePlugin):
                                     #logger.info("all attributes match, setting permissions")
                                     # All of the attributes match
                                     obj = self.unrestrictedTraverse(path)
-                                    #logger.info("Setting permissions on %r" % repr(obj))
-                                    for role in ii['_roles']:
-                                        #logger.info("setting %s on %s" % (roles, path))
-                                        obj.manage_setLocalRoles(userId, role)
+                                    logger.debug("Setting permissions on %r to %s" % (
+                                                repr(obj), ', '.join(ii['_roles'])))
+                                    obj.manage_setLocalRoles(userId, ii['_roles'])
                                     obj.reindexObjectSecurity()
+            except (ConflictError, KeyboardInterrupt):
+                raise
             except Exception, e:
                 logger.warning("error processing local roles: %s" % str(e))
         #logger.info("authenticateCredentials returning: %s" % str(userId))
@@ -371,27 +361,16 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.getMappings()
         []
         """
-        try:
-            rval = []
-            for ii in self.authzMappings:
-                rval.append(ii)
-            return rval
-        except Exception, err:
-            #logger.info("error returning authzMappings: %s" % str(err), exc_info=True)
-            return []
+        return list(self.authzMappings)
 
     security.declareProtected(ManageUsers, 'putMappings')
     def putMappings(self, authz):
         """Save the input as authzMappings."""
-        #logger.info("saving self.authzMappings as %r" % repr(authz))
-        self.authzMappings = []
-        for ii in authz:
-            self.authzMappings.append(ii)
+        self.authzMappings = list(authz)
 
     security.declareProtected(ManageUsers, 'addMappings')
     def addMappings(self, authz):
         """Append the input to authzMappings."""
-        #logger.info("appending to self.authzMappings %r" % repr(authz))
         self.authzMappings.append(authz)
 
     security.declarePrivate('requiredRoles')
@@ -432,9 +411,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
         The class unittest tests this."""
 
-        #logger.info("extractCredentials(%r)" % repr(request.environ))
         config = self.getConfig()
-        #logger.info("config = %r" % repr(config))
         user = {'location': '', 'filters': {}, 'localperms': {}}
         for ii in ((usernameKey, httpRemoteUserKey),
                    ('fullname', httpCommonnameKey),
@@ -447,7 +424,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                         break
             except (IndexError, TypeError), err:
                 logger.warning("user attribute configuration error: %s" % str(err), exc_info=True)
-        #logger.info("user = %r" % repr(user))
         if not user[usernameKey] or user[usernameKey] == '(null)':
             return None
 
@@ -460,7 +436,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                (config[stripDomainNamesKey] == 2 and \
                 nameDomain[1] in config[stripDomainNamesListKey]):
                 user[usernameKey] = nameDomain[0]
-        #logger.info("user_id = %s" % user[usernameKey])
 
         # build a location value
         for ii in (config[httpLocalityKey], config[httpStateKey],
@@ -474,38 +449,31 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                         user['location'] += ', ' + val
                     else:
                         user['location'] = val
-        #logger.info("user['location'] = %s" % user['location'])
 
         # save the values of any authz filter
         for ii in self.getTokens():
             user['filters'][ii] = request.environ.get(ii, None)
-        #logger.info("user['filters'] = %r" % repr(user['filters']))
 
         # save the values of any local authz filter
         sharing = self.getSharingConfig()
         for ii in sharing[httpSharingTokensKey]:
             user['localperms'][ii] = request.environ.get(ii, None)
-        #logger.info("user['localperms'] = %r" % repr(user['localperms']))
 
         # See if this Shib user should map to a specific existing plone user
-        try:
-            sourceUsers = getToolByName(self, 'source_users')
-        except Exception, err:
-            logger.warning("error getting source_users: %s" % str(err), exc_info=True)
+        sourceUsers = getToolByName(self, 'source_users', None)
         for role in self.authzMappings:
-            #logger.info("role = %r" % repr(role))
             # if this role mapping doesn't list a userid, skip it.
             if not role['userid']:
+                continue
+            if sourceUsers is None:
                 continue
             # verify this userid actually exists in plone
             try:
                 ploneUser = sourceUsers.getUserInfo(role['userid'])
-                #logger.info("mapped to %r" % repr(ploneUser))
             except KeyError:
                 continue
             # for each source given in authz_mappings
             for ii in role['values'].iterkeys():
-                #logger.info("checking role: %s" % ii)
                 assignRole = False
                 # if the authz_mappings pattern is not set, assume ok
                 if not role['values'][ii]:
@@ -523,7 +491,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             # either there was no pattern or the pattern matched
             # for every mapping, so this shib user becomes the given plone user
             if assignRole:
-                #logger.info("returning user %r" % repr(ploneUser))
                 return ploneUser
 
         user['_getMappings'] = self.getMappings()
@@ -552,7 +519,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                 if ii not in confirmedRoles:
                     return None
 
-        #logger.info("extractCredentials returning: %r" % repr(user))
         return user
 
 classImplements(ExtractionPlugin, IExtractionPlugin)
@@ -591,17 +557,13 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         Verify it returns an empty configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler.getRoles(self.portal.acl_users)
-        [{'members_url': 'portal_role_manager/manage_roles?role_id=Manager&assign=1', 'description': '', 'title': '', 'properties_url': 'portal_role_manager/manage_roles?role_id=Manager', 'pluginid': 'portal_role_manager', 'id': 'Manager'}, {'members_url': 'portal_role_manager/manage_roles?role_id=Owner&assign=1', 'description': '', 'title': '', 'properties_url': 'portal_role_manager/manage_roles?role_id=Owner', 'pluginid': 'portal_role_manager', 'id': 'Owner'}, {'members_url': 'portal_role_manager/manage_roles?role_id=Reviewer&assign=1', 'description': '', 'title': '', 'properties_url': 'portal_role_manager/manage_roles?role_id=Reviewer', 'pluginid': 'portal_role_manager', 'id': 'Reviewer'}]
+        >>> from pprint import pprint
+        >>> sorted([role['id'] for role in handler.getRoles(self.portal.acl_users)])
+        ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
         """
         portalRoleManager = getToolByName(context, 'portal_role_manager')
-        roles = list(portalRoleManager.enumerateRoles())
-        for ii in range(len(roles)):
-            if roles[ii]['id'] == 'Member':
-                roles.pop(ii)
-                break
-        #logger.info("str(roles) = %s" % str(roles))
-        return roles
+        return [role for role in portalRoleManager.enumerateRoles()
+                if role['id'] != 'Member']
 
     security.declareProtected(ManageUsers, 'getUsers')
     def getUsers(self, context):
@@ -613,10 +575,9 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler.getUsers(self.portal.acl_users)
         ['', 'test_user_1_']
         """
-        users = ['', ]
         sourceUsers = getToolByName(context, 'source_users')
-        for ii in sourceUsers.getUserIds():
-            users.append(str(ii))
+        users = list(sourceUsers.getUserIds())
+        users.insert(0, '')
         return users
 
     security.declareProtected(ManageUsers, 'getGroups')
@@ -629,11 +590,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler.getGroups(self.portal.acl_users)
         ['Administrators', 'Reviewers']
         """
-        groups = []
         sourceGroups = getToolByName(context, 'source_groups')
-        for ii in sourceGroups.getGroupIds():
-            groups.append(str(ii))
-        return groups
+        return list(sourceGroups.getGroupIds())
 
     security.declareProtected(ManageUsers, 'getValue')
     def getValue(self, authz, row, kind, col):
@@ -656,7 +614,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler.manage_changeConfig()
 
         """
-        #logger.info("%r\n" % repr(REQUEST.form))
         if not REQUEST:
             return None
         try:
@@ -668,7 +625,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
         formTokens = tuple(REQUEST.form.get(httpAuthzTokensKey, '').splitlines())
-        #logger.info("%r == %r -> %s" % (repr(tokens), repr(formTokens), str(tokens == formTokens)))
         if tokens != formTokens:
             for ii in self.getMappings():
                 saveVals = {}
@@ -702,7 +658,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.manage_changeMapping()
         """
-        #logger.info("%r\n" % repr(REQUEST.form))
         if not REQUEST:
             return None
         sources = self.getTokens()
@@ -754,7 +709,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             except ValueError:
                 continue
         deleteIds.sort(reverse=True)
-        #logger.info("delete ids: %r\n" % repr(deleteIds))
         # now shorten without shifting indexes of items still to be removed
         for ii in deleteIds:
             try:
@@ -773,7 +727,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler.manage_addMapping()
         """
-        #logger.info("REQUEST = %r\n" % repr(REQUEST.form))
         if not REQUEST:
             return None
         saveVals = self.getMapping()
@@ -802,7 +755,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         for ii in REQUEST.form.get('groupid', []):
             if ii in groups:
                 saveVals['groupid'].append(ii)
-        #logger.info("saveVals = %r\n" % repr(saveVals))
         self.addMappings(saveVals)
         return REQUEST.RESPONSE.redirect('%s/manage_authz' % self.absolute_url())
 

@@ -7,10 +7,7 @@ Here, we're going to try a few pseudo-browser tests.
 We begin by using the utility method for adding AutoUserMakerPASPlugin to an
 existing acl_users.
 
-    >>> try:
-    ...     from AutoUserMakerPASPlugin.tests import utils
-    ... except ImportError:
-    ...     from Products.AutoUserMakerPASPlugin.tests import utils
+    >>> from Products.AutoUserMakerPASPlugin.tests import utils
 
 And make sure we can set up our plugin in the PAS instance.
 

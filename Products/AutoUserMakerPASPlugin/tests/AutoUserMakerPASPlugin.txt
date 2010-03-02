@@ -8,10 +8,7 @@ Zope instance.
 We begin by using the utility method for adding AutoUserMakerPASPlugin to an
 existing acl_users.
 
-    >>> try:
-    ...     from AutoUserMakerPASPlugin.tests import utils
-    ... except ImportError:
-    ...     from Products.AutoUserMakerPASPlugin.tests import utils
+    >>> from Products.AutoUserMakerPASPlugin.tests import utils
 
 Make sure trying to do this on an object without any acl_users fails.
 
@@ -239,17 +236,17 @@ group.
 
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': 1, 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': 1, 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'test'}
     'version':1
     'groupid':['Reviewers']
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -270,12 +267,12 @@ Now we have 3 user mappings. Let's delete foo.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'test'}
     'version':1
     'groupid':['Reviewers']
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -291,12 +288,12 @@ And then there were 2. Let's change test to foo, and make bar an Administrator.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -312,12 +309,12 @@ at least as far as adding or deleting mapping rules.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -334,12 +331,12 @@ at least as far as adding or deleting mapping rules.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'Owner': '', 'Reviewer': '', 'Manager': '', 'SuperUser': ''}
+    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
