@@ -2,17 +2,18 @@
 # aren't using Plone, it doesn't hurt anything.
 
 from Products.CMFCore.utils import getToolByName
-from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin, IExtractionPlugin
+from Products.PluggableAuthService.interfaces.plugins import (
+    IAuthenticationPlugin, IExtractionPlugin)
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 
 def _firstIdOfClass(container, class_):
-    """Return the id of the first object of class `class_` within `container`.
-    If there is none, return None."""
+    """ Return the id of the first object of class `class_` within `container`.
+    If there is none, return None.
+    """
     for id in container.objectIds():
         if isinstance(container[id], class_):
             return id
-    return None
 
 def install(portal, reinstall=False):
     acl_users = getToolByName(portal, 'acl_users')
@@ -23,7 +24,8 @@ def install(portal, reinstall=False):
         pluginId = 'AutoUserMakerPASPlugin'
         # http://wiki.zope.org/zope2/ObjectManager
         constructors = acl_users.manage_addProduct[pluginId]
-        constructors.manage_addAutoUserMaker(pluginId, title='AutoUserMakerPAS Plugin')
+        constructors.manage_addAutoUserMaker(pluginId,
+                                             title='AutoUserMakerPAS Plugin')
 
     # Activate it:
     plugins = acl_users.plugins

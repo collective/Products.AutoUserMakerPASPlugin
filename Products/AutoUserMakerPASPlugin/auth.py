@@ -260,8 +260,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
     ExtractionPlugin is an abstract class, but ApacheAuthPluginHandler fills
     it out.
-    >>> from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
-    >>> handler = ApacheAuthPluginHandler('someId')
+    >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+    >>> handler = ExtractionPlugin()
     >>> handler.extractCredentials(request)
     {'user_id': 'foobar', 'description': None, 'localperms': {}, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
 
@@ -307,9 +307,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             page template.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.getConfig()
         {'http_state': ('HTTP_SHIB_ORGPERSON_STATE',), 'strip_domain_name_list': (), 'http_remote_user': ('HTTP_X_REMOTE_USER',), 'http_authz_tokens': (), 'strip_domain_names': 1, 'http_email': ('HTTP_SHIB_INETORGPERSON_MAIL',), 'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',), 'http_sharing_tokens': (), 'http_locality': ('HTTP_SHIB_ORGPERSON_LOCALITY',), 'http_sharing_labels': (), 'http_description': ('HTTP_SHIB_ORGPERSON_TITLE',), 'http_country': ('HTTP_SHIB_ORGPERSON_C',)}
         """
@@ -332,9 +331,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Return the items end users can use to share with.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.getSharingConfig()
         {'http_sharing_tokens': (), 'http_sharing_labels': ()}
         """
@@ -346,9 +344,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Return http_authz_tokens as a tupple (how getProperty returns it).
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.getTokens()
         ()
         """
@@ -356,16 +353,26 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
     security.declareProtected(ManageUsers, 'getMapping')
     def getMapping(self):
-        return {'version': 1, 'values': {}, 'roles': {}, 'userid': '', 'groupid': []}
+        """ Get a default empty mapping
+
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
+        >>> sorted(handler.getMapping().items())
+        [('groupid', []), ('roles', {}), ('userid', ''), ('values', {}), ('version', 1)]
+        """
+        return {'version': 1,
+                 'values': {},
+                 'roles': {},
+                 'userid': '',
+                 'groupid': []}
 
     security.declareProtected(ManageUsers, 'getMappings')
     def getMappings(self):
         """Return authzMappings as a list of dictionaries.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.getMappings()
         []
         """
@@ -386,9 +393,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Extract the required roles from the property.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.requiredRoles()
         ()
         """
@@ -399,9 +405,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """Extract the login users from the property.
 
         Verify it returns an empty configuration.
-        >>> from Products.AutoUserMakerPASPlugin.auth import \
-                ApacheAuthPluginHandler
-        >>> handler = ApacheAuthPluginHandler('someId')
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
         >>> handler.loginUsers()
         ()
         """
