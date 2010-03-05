@@ -44,6 +44,13 @@ usernameKey = 'user_id'
 
 PWCHARS = string.letters + string.digits + string.punctuation
 
+def safe_int(s, default=0):
+    try:
+        return int(s)
+    except (ValueError, TypeError):
+        return default
+
+
 class AutoUserMakerPASPlugin(BasePlugin):
     """ An authentication plugin that creates member objects
 
@@ -71,6 +78,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
     security.declarePrivate('authenticateCredentials')
     def authenticateCredentials(self, credentials):
         """See class's docstring and IAuthenticationPlugin."""
+
         mappings = credentials.pop('_getMappings', [])
         userId = credentials.get(usernameKey, None)
 
@@ -425,21 +433,16 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         in the properites.
 
         The class unittest tests this."""
-
         config = self.getConfig()
         user = {'location': '', 'filters': {}, 'localperms': {}}
-        for ii in ((usernameKey, httpRemoteUserKey),
-                   ('fullname', httpCommonnameKey),
-                   ('description', httpDescriptionKey),
-                   ('email', httpEmailKey)):
-            try:
-                for jj in config[ii[1]]:
-                    user[ii[0]] = request.environ.get(jj, None)
-                    if user[ii[0]]:
-                        break
-            except (IndexError, TypeError), err:
-                logger.warning("user attribute configuration error: %s",
-                               err, exc_info=True)
+        for label, key in ((usernameKey, httpRemoteUserKey),
+                           ('fullname', httpCommonnameKey),
+                           ('description', httpDescriptionKey),
+                           ('email', httpEmailKey)):
+            for jj in config[key]:
+                user[label] = request.environ.get(jj, None)
+                if user[label]:
+                    break
         if not user[usernameKey] or user[usernameKey] == '(null)':
             return None
 
@@ -550,8 +553,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         ExtractionPlugin.__init__(self)
         AutoUserMakerPASPlugin.__init__(self, pluginId, title)
 
-        self._id = self.id = pluginId  # What's _id for?
-        self.title = title
         self.rKey = re.compile(r'(.+)-(\d+)$')
 
     # A method to return the configuration page:
@@ -639,10 +640,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         if not REQUEST:
             return None
         reqget = REQUEST.form.get
-        try:
-            strip = int(reqget(stripDomainNamesKey, 1))
-        except ValueError:
-            strip = 1
+        strip = safe_int(reqget(stripDomainNamesKey, 1), default=1)
         if strip < 0: strip = 0
         if strip > 2: strip = 2
         # If Shib fields change, then update the authz_mappings property.
@@ -730,11 +728,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         # now process delete checkboxes
         deleteIds = REQUEST.form.get('delete_ids', [])
         # make sure deleteIds is a list on integers, in descending order
-        for ii in range(len(deleteIds)):
-            try:
-                deleteIds[ii] = int(deleteIds[ii])
-            except ValueError:
-                continue
+        deleteIds = [safe_int(did)
+                     for did in deleteIds if safe_int(did, None) != None]
         deleteIds.sort(reverse=True)
         # now shorten without shifting indexes of items still to be removed
         for ii in deleteIds:
