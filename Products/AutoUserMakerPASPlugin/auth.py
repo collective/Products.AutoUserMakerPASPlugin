@@ -21,12 +21,8 @@ from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
-try:
-    from Products.PluggableAuthService import _SWALLOWABLE_PLUGIN_EXCEPTIONS
-    _SWALLOWABLE_PLUGIN_EXCEPTIONS # pyflakes
-except ImportError:  # in case that private const goes away someday
-    _SWALLOWABLE_PLUGIN_EXCEPTIONS = (NameError, AttributeError, KeyError,
-                                      TypeError, ValueError)
+from Products.PluggableAuthService.PluggableAuthService import \
+    _SWALLOWABLE_PLUGIN_EXCEPTIONS
 
 stripDomainNamesKey = 'strip_domain_names'
 stripDomainNamesListKey = 'strip_domain_name_list'
@@ -317,8 +313,20 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         Verify it returns an empty configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
         >>> handler = ExtractionPlugin()
-        >>> handler.getConfig()
-        {'http_state': ('HTTP_SHIB_ORGPERSON_STATE',), 'strip_domain_name_list': (), 'http_remote_user': ('HTTP_X_REMOTE_USER',), 'http_authz_tokens': (), 'strip_domain_names': 1, 'http_email': ('HTTP_SHIB_INETORGPERSON_MAIL',), 'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',), 'http_sharing_tokens': (), 'http_locality': ('HTTP_SHIB_ORGPERSON_LOCALITY',), 'http_sharing_labels': (), 'http_description': ('HTTP_SHIB_ORGPERSON_TITLE',), 'http_country': ('HTTP_SHIB_ORGPERSON_C',)}
+        >>> import pprint
+        >>> pprint.pprint(handler.getConfig())
+        {'http_authz_tokens': (),
+         'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',),
+         'http_country': ('HTTP_SHIB_ORGPERSON_C',),
+         'http_description': ('HTTP_SHIB_ORGPERSON_TITLE',),
+         'http_email': ('HTTP_SHIB_INETORGPERSON_MAIL',),
+         'http_locality': ('HTTP_SHIB_ORGPERSON_LOCALITY',),
+         'http_remote_user': ('HTTP_X_REMOTE_USER',),
+         'http_sharing_labels': (),
+         'http_sharing_tokens': (),
+         'http_state': ('HTTP_SHIB_ORGPERSON_STATE',),
+         'strip_domain_name_list': (),
+         'strip_domain_names': 1}
         """
         return {
             stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
@@ -389,12 +397,14 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     security.declareProtected(ManageUsers, 'putMappings')
     def putMappings(self, authz):
         """Save the input as authzMappings."""
-        self.authzMappings = list(authz)
+        self.authzMappings = PersistentList(authz)
+        self._p_changed = 1
 
     security.declareProtected(ManageUsers, 'addMappings')
     def addMappings(self, authz):
         """Append the input to authzMappings."""
         self.authzMappings.append(authz)
+        self._p_changed = 1
 
     security.declarePrivate('requiredRoles')
     def requiredRoles(self):
@@ -569,50 +579,52 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                      + BasePlugin.manage_options
 
     security.declareProtected(ManageUsers, 'getRoles')
-    def getRoles(self, context):
+    def getRoles(self):
         """Return a list of roles.
 
         Verify it returns an empty configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
+        >>> handler = handler.__of__(self.portal.acl_users)
         >>> from pprint import pprint
-        >>> sorted([role['id']
-        ...         for role in handler.getRoles(self.portal.acl_users)])
+        >>> sorted([role['id'] for role in handler.getRoles()])
         ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
         """
-        portalRoleManager = getToolByName(context, 'portal_role_manager')
+        portalRoleManager = getToolByName(self, 'portal_role_manager')
         return [role for role in portalRoleManager.enumerateRoles()
                 if role['id'] != 'Member']
 
     security.declareProtected(ManageUsers, 'getUsers')
-    def getUsers(self, context):
+    def getUsers(self):
         """Return the list of current users.
 
         Verify it returns a test default configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler.getUsers(self.portal.acl_users)
+        >>> handler = handler.__of__(self.portal.acl_users)
+        >>> handler.getUsers()
         ['', 'test_user_1_']
         """
-        sourceUsers = getToolByName(context, 'source_users')
+        sourceUsers = getToolByName(self, 'source_users')
         users = list(sourceUsers.getUserIds())
         users.insert(0, '')
         return users
 
     security.declareProtected(ManageUsers, 'getGroups')
-    def getGroups(self, context):
+    def getGroups(self):
         """Return the list of current groups.
 
         Verify it returns a test default configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler.getGroups(self.portal.acl_users)
+        >>> handler = handler.__of__(self.portal.acl_users)
+        >>> handler.getGroups()
         ['Administrators', 'Reviewers']
         """
-        sourceGroups = getToolByName(context, 'source_groups')
+        sourceGroups = getToolByName(self, 'source_groups')
         return list(sourceGroups.getGroupIds())
 
     security.declareProtected(ManageUsers, 'getValue')
@@ -684,9 +696,9 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         if not REQUEST:
             return None
         sources = self.getTokens()
-        roles = self.getRoles(self)
-        users = self.getUsers(self)
-        groups = self.getGroups(self)
+        roles = self.getRoles()
+        users = self.getUsers()
+        groups = self.getGroups()
         authz = self.getMappings()
         # Pull the contents of the form in to a list formatted like authz to
         # allow us to check that the number of entries in the ZODB is the same
@@ -754,28 +766,24 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         if not REQUEST:
             return None
         saveVals = self.getMapping()
-        auth = REQUEST.form.get('auth')
+        reqget = REQUEST.form.get
+        auth = reqget('auth')
         if not auth or len(auth) != len(self.getTokens()):
             return REQUEST.RESPONSE.redirect('%s/manage_authz' %
                                              self.absolute_url())
-        # loop through getTokens values, saving 'paired' setting
-        # XXX: I'm not crazy about this, because a change in the tokens list
-        # while another browser windows has the form open will result in the
-        # wrong permissions getting assigned.
-        for jj, ii in enumerate(self.getTokens()):
-            saveVals['values'][ii] = auth[jj]
+        saveVals['values'] = dict(
+		[(key, value) for key, value in zip(self.getTokens(), auth)])
         # loop through getRoles ensures no input other than currently
         # valid roles
-        for ii in self.getRoles(self):
-            saveVals['roles'][ii['id']] = REQUEST.form.get(ii['id'], '')
-        users = self.getUsers(self)
-        ii = REQUEST.form.get('userid', '')
-        if ii in users:
-            saveVals['userid'] = ii
-        groups = self.getGroups(self)
-        for ii in REQUEST.form.get('groupid', []):
-            if ii in groups:
-                saveVals['groupid'].append(ii)
+        for role in self.getRoles():
+            saveVals['roles'][role['id']] = reqget(role['id'], '')
+        users = self.getUsers()
+        userid = reqget('userid', '')
+        if userid in self.getUsers():
+            saveVals['userid'] = userid
+        groups = self.getGroups()
+        saveVals['groupid'] = [group for group in reqget('groupid', [])
+				     if group in groups]
         self.addMappings(saveVals)
         return REQUEST.RESPONSE.redirect('%s/manage_authz' %
                                          self.absolute_url())

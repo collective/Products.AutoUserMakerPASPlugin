@@ -1,19 +1,17 @@
 <div tal:replace="structure here/manage_page_header">Header</div>
-
-<div tal:define="form_title string:Apache PAS Configuration"
-    tal:replace="structure here/manage_tabs"> TABS </div>
+<div tal:replace="structure here/manage_tabs"> TABS </div>
 
 <tal:block i18n:domain="ApachePASPlugin"
-           tal:define="listRoleInfo python:context.getRoles(context);
-                       listAuthzMappings python:context.getMappings();
-                       listUsers python:context.getUsers(context);
-                       listGroups python:context.getGroups(context);
+           tal:define="listRoleInfo context/getRoles;
+                       listAuthzMappings context/getMappings;
+                       listUsers context/getUsers;
+                       listGroups context/getGroups;
                        config context/getConfig">
 
-  <tal:use_session tal:condition="python:config['http_authz_tokens']">
+  <tal:use_session tal:condition="config/http_authz_tokens">
     <h3 i18n:translate="heading_add_role_mapping">Add Role Mapping</h3>
     <form action="manage_addMapping"
-          tal:attributes="action python:here.absolute_url()+'/manage_addMapping'"
+          tal:attributes="action string:${context/absolute_url}/manage_addMapping"
           method="POST">
       <table width="100%" cellpadding="2" cellspacing="0">
         <tr>
@@ -37,7 +35,7 @@
           <th i18n:translate="heading_groups_label">Group(s)</th>
         </tr>
         <tr class="row-hilite">
-          <td class="form-text" tal:repeat="col python:config['http_authz_tokens']">
+          <td class="form-text" tal:repeat="col config/http_authz_tokens">
             <label tal:content="col">SOURCE</label>
             <input name="auth:list" cols="30"/>
           </td>
@@ -83,7 +81,7 @@
     </p>
   </tal:use_session>
 
-  <tal:use_session tal:condition="python:listAuthzMappings">
+  <tal:use_session tal:condition="listAuthzMappings">
     <h3 i18n:translate="heading_edit_role_mapping">Edit Role Mappings</h3>
     <form action="manage_changeMapping"
           tal:attributes="action python:here.absolute_url()+'/manage_changeMapping'"
