@@ -392,7 +392,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.getMappings()
         []
         """
-        return list(self.authzMappings)
+        return self.authzMappings
 
     security.declareProtected(ManageUsers, 'putMappings')
     def putMappings(self, authz):
