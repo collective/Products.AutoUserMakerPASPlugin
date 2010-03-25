@@ -3,7 +3,7 @@
 
 <tal:block i18n:domain="ApachePASPlugin"
            tal:define="listRoleInfo context/getRoles;
-                       listAuthzMappings context/getMappings;
+                       listAuthzMappings context/listMappings;
                        listUsers context/getUsers;
                        listGroups context/getGroups;
                        config context/getConfig">
@@ -111,33 +111,34 @@
         </tr>
 
         <tr class="row-hilite"
-          tal:repeat="row python:range(len(listAuthzMappings))"
+          tal:repeat="row listAuthzMappings"
           tal:attributes="class python:repeat['row'].odd() and 'row-normal' or default">
+          <tal:var define="idx repeat/row/index">
           <td class="form-text" tal:repeat="col python:config['http_authz_tokens']">
             <label tal:content="col">SOURCE</label>
             <input name="auth:list" cols="30" value="DATA"
-                   tal:attributes="name python:'auth-%d:list' % row;
-                                   value python:context.getValue(listAuthzMappings,row,'values',col)"/>
+                   tal:attributes="name python:'auth-%d:list' % idx;
+                                   value python:context.getValue(row, 'values', col)"/>
           </td>
           <th>&nbsp;</th>
           <td class="form-text" tal:repeat="role listRoleInfo">
-            <tal:block tal:define="state python:context.getValue(listAuthzMappings,row,'roles',role['id'])">
+            <tal:block tal:define="state python:context.getValue(row,'roles',role['id'])">
               <tal:use_session tal:condition="python:state=='on'">
-                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], row)" checked="checked" />
+                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], idx)" checked="checked" />
               </tal:use_session>
               <tal:use_session tal:condition="python:state!='on'">
-                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], row)" />
+                <input type="checkbox" name="role" tal:attributes="name python:'%s-%d' % (role['id'], idx)" />
               </tal:use_session>
             </tal:block>
           </td>
           <th>&nbsp;</th>
           <td class="form-text">
-            <select name="userid" tal:attributes="name python:'userid-%d' % row">
+            <select name="userid" tal:attributes="name python:'userid-%d' % idx">
               <tal:block tal:repeat="userid listUsers">
-                <tal:use_session tal:condition="python:listAuthzMappings[row]['userid'] == userid">
+                <tal:use_session tal:condition="python:row['userid'] == userid">
                   <option selected="selected" tal:content="userid">USER</option>
                 </tal:use_session>
-                <tal:use_session tal:condition="python:listAuthzMappings[row]['userid'] != userid">
+                <tal:use_session tal:condition="python:row['userid'] != userid">
                   <option tal:content="userid">USER</option>
                 </tal:use_session>
               </tal:block>
@@ -145,12 +146,12 @@
           </td>
           <th>&nbsp;</th>
           <td class="form-text">
-            <select name="groupid" tal:attributes="name python:'groupid-%d:list' % row" multiple="on">
+            <select name="groupid" tal:attributes="name python:'groupid-%d:list' % idx" multiple="on">
               <tal:block tal:repeat="groupid listGroups">
-                <tal:use_session tal:condition="python:groupid in listAuthzMappings[row]['groupid']">
+                <tal:use_session tal:condition="python:groupid in row['groupid']">
                   <option selected="selected" tal:content="groupid">GROUP</option>
                 </tal:use_session>
-                <tal:use_session tal:condition="python:groupid not in listAuthzMappings[row]['groupid']">
+                <tal:use_session tal:condition="python:groupid not in row['groupid']">
                   <option tal:content="groupid">GROUP</option>
                 </tal:use_session>
               </tal:block>
@@ -158,8 +159,9 @@
           </td>
           <th>&nbsp;</th>
           <td class="form-text">
-            <input type="checkbox" name="delete_ids:list" value="DELETE_ID" tal:attributes="value row" />
+            <input type="checkbox" name="delete_ids:list" value="DELETE_ID" tal:attributes="value idx" />
           </td>
+        </tal:var>
         </tr>
       </table>
 

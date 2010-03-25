@@ -384,7 +384,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
     security.declareProtected(ManageUsers, 'getMappings')
     def getMappings(self):
-        """Return authzMappings as a list of dictionaries.
+        """Return authzMappings as a persistent list of dictionaries.
 
         Verify it returns an empty configuration.
         >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
@@ -393,6 +393,18 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         []
         """
         return self.authzMappings
+
+    security.declareProtected(ManageUsers, 'listMappings')
+    def listMappings(self):
+        """Return authzMappings as a list of dictionaries.
+
+        Verify it returns an empty configuration.
+        >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
+        >>> handler = ExtractionPlugin()
+        >>> handler.getMappings()
+        []
+        """
+        return list(self.authzMappings)
 
     security.declareProtected(ManageUsers, 'putMappings')
     def putMappings(self, authz):
@@ -628,13 +640,13 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         return list(sourceGroups.getGroupIds())
 
     security.declareProtected(ManageUsers, 'getValue')
-    def getValue(self, authz, row, kind, col):
+    def getValue(self, authz, kind, col):
         """Return the given configuration item as a string.
 
         This exists to handle the case of Shib tokens or roles getting removed
         or added while there are entries in authz_mappings."""
         try:
-            return authz[row][kind][col]
+            return authz[kind][col]
         except (KeyError, IndexError):
             return ''
 
