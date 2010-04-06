@@ -1,9 +1,5 @@
-=====================================
-AutoUserMakerPASPlugin Package Readme
-=====================================
-
 Overview
---------
+========
 
 Accept Apache based authentication in Zope and create Plone users.
 
@@ -298,14 +294,22 @@ Shibboleth Changes
 
 For Shibboleth 1.3, change the MemorySessionCache in the Service Provider's
 shibboleth.xml file to increase values to avoid sessions expiring in 30 minutes:
-		<MemorySessionCache cleanupInterval="28800" cacheTimeout="60"
-		 AATimeout="30" AAConnectTimeout="15" defaultLifetime="28800"
-		 retryInterval="300" strictValidity="false" propagateErrors="false"/>
+
+ ::
+
+  <MemorySessionCache cleanupInterval="28800" cacheTimeout="60"
+     AATimeout="30" AAConnectTimeout="15" defaultLifetime="28800"
+     retryInterval="300" strictValidity="false" propagateErrors="false"/>
+
 Here, you increase the cleanupInterval and defaultLifetime values in seconds.
 
 For Shibboleth 2.0, change the LoginHandler entry in the Identity Provider's
 handler.xml to increase values to avoid sessions expiring in 30 minutes:
-		<LoginHandler xsi:type="RemoteUser" authenticationDuration="480">
+
+ ::
+
+  <LoginHandler xsi:type="RemoteUser" authenticationDuration="480">
+
 Here, you add the authenticationDuration value in minutes.
 
 Configuration
@@ -457,9 +461,3 @@ Yuergens of psych.ucla.edu, Li Cheng of pku.edu.cn and Yuri <yurj> of alfa.it
 for testing, and Alex Man of seas.ucla.edu for tracking down the Shibboleth 1.3
 session expiration cause.
 
-
-Support
-=======
-
-For right now, email alan DOT brenner AT ithaka DOT org. I'm sometimes on the
-#plone IRC channel as AlanBrenner.
