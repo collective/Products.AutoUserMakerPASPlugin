@@ -51,12 +51,6 @@
       </label>
     </p>
     <p>
-      <input type="checkbox" name="shibboleth_wins" />
-      <label i18n:translate="label_shibboleth_wins">
-        Always update shibboleth group information
-      </label>
-    </p>
-    <p>
       <textarea name="strip_domain_name_list" rows="10" cols="50"
                 tal:content="python:'\n'.join(config['strip_domain_name_list'])">
       </textarea>
