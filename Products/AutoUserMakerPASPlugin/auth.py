@@ -57,8 +57,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
 
        AutoUserMakerPASPlugin expects a mapping like ExtractionPlugin
        returns, makes the user specified therein, gives him the Member role so
-       Plone treats recognizes him, assigns local permissions if
-       ShibbolethPermissions is installed and passes control to the next
+       Plone recognizes him and passes control to the next
        authentication plugin.
 
        This unittest doesn't show much since this really needs integration

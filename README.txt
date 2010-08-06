@@ -1,5 +1,5 @@
-============================
-ShibbolethPermissions Readme
-============================
+=============================
+AutoUserMakerPASPlugin Readme
+=============================
 
-Use shibboleth attributes in Plone.
+Automatically generate members on login in Plone.
