@@ -396,12 +396,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """
         return self.getProperty('login_users', [])
 
-    def getshibattrs(self):
-        sharing = self.getSharingConfig()
-        request = getattr(self, 'REQUEST')
-        return dict([(ii, request.environ.get(ii))
-                     for ii in sharing[httpSharingTokensKey]
-                     if request.environ.has_key(ii)])
 
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
