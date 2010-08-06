@@ -7,7 +7,12 @@ import string
 
 from persistent.list import PersistentList
 from AccessControl import ClassSecurityInfo
-from Globals import InitializeClass
+try:
+    # Zope >= 2.12
+    from App.class_init import InitializeClass
+except ImportError:
+    # Zope < 2.12
+    from Globals import InitializeClass
 from OFS.PropertyManager import PropertyManager
 from ZODB.POSException import ConflictError
 
@@ -79,7 +84,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
         userId = credentials.get(usernameKey, None)
 
         if userId is not None and self._getPAS() is not None and \
-            self._getPAS().getUserById(userId) is None:
+           self._getPAS().getUserById(userId) is None:
             # Make a user with id `userId`, and assign him at least the Member
             # role, since user doesn't exist.
 
@@ -172,57 +177,6 @@ class AutoUserMakerPASPlugin(BasePlugin):
             source_groups = getToolByName(self, 'source_groups')
             for ii in groups:
                 source_groups.addPrincipalToGroup(user.getId(), ii)
-
-            shibPerms = getToolByName(self, 'ShibbolethPermissions', None)
-            uservals = credentials.get('localperms', None)
-            if shibPerms is not None and uservals:
-                # Ignore any error here, since it just means the user didn't
-                #  get permissions on something. Not ignoring means the user
-                #  will see a plone page that doesn't look like the user has
-                #  logged in.
-                try:
-                    for path, regexs in shibPerms.getLocalRoles().iteritems():
-                        for ii in regexs:
-                            found = True
-                            # Make sure the incoming user has all of the
-                            # needed attributes
-                            for name in ii.iterkeys():
-                                if name == '_roles':
-                                    continue
-                                if not uservals.has_key(name):
-                                    found = False
-                                if not found:
-                                    break
-                            if found:
-                                for name, pattern in ii.iteritems():
-                                    if name == '_roles' or \
-                                       uservals[name] is None:
-                                        continue
-                                    try:
-                                        regex = re.compile(pattern)
-                                        if not regex.search(uservals[name]):
-                                            found = False
-                                    except (ConflictError, KeyboardInterrupt):
-                                        raise
-                                    except Exception, e:
-                                        pass
-                                    if not found:
-                                        break
-                            if found:
-                                # All of the attributes match
-                                try:
-                                    obj = self.unrestrictedTraverse(path)
-                                except (AttributeError, KeyError):
-                                    continue
-                                logger.debug("Setting permissions on %r to %s",
-                                             (repr(obj),
-                                              ', '.join(ii['_roles'])))
-                                obj.manage_setLocalRoles(userId, ii['_roles'])
-                                obj.reindexObjectSecurity()
-                except (ConflictError, KeyboardInterrupt):
-                    raise
-                except Exception, e:
-                    logger.warning("error processing local roles: %s" % str(e))
         if userId is None:
             return None  # Pass control to the next IAuthenticationPlugin.
         return userId, userId
@@ -442,6 +396,13 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """
         return self.getProperty('login_users', [])
 
+    def getshibattrs(self):
+        sharing = self.getSharingConfig()
+        request = getattr(self, 'REQUEST')
+        return dict([(ii, request.environ.get(ii))
+                     for ii in sharing[httpSharingTokensKey]
+                     if request.environ.has_key(ii)])
+
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """Search a Zope request for Shibboleth tokens. See IExtractionPlugin.
@@ -456,7 +417,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
         The class unittest tests this."""
         config = self.getConfig()
-        user = {'location': '', 'filters': {}, 'localperms': {}}
+        user = {'location': '', 'filters': {}}
         for label, key in ((usernameKey, httpRemoteUserKey),
                            ('fullname', httpCommonnameKey),
                            ('description', httpDescriptionKey),
@@ -495,11 +456,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         # save the values of any authz filter
         for ii in self.getTokens():
             user['filters'][ii] = request.environ.get(ii, None)
-
-        # save the values of any local authz filter
-        sharing = self.getSharingConfig()
-        for ii in sharing[httpSharingTokensKey]:
-            user['localperms'][ii] = request.environ.get(ii, None)
 
         # See if this Shib user should map to a specific existing plone user
         sourceUsers = getToolByName(self, 'source_users', None)
@@ -665,8 +621,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             return None
         reqget = REQUEST.form.get
         strip = safe_int(reqget(stripDomainNamesKey, 1), default=1)
-        if strip < 0: strip = 0
-        if strip > 2: strip = 2
+        strip = max(min(strip, 2), 0) # 0 < x < 2
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
         formTokens = tuple(reqget(httpAuthzTokensKey, '').splitlines())
