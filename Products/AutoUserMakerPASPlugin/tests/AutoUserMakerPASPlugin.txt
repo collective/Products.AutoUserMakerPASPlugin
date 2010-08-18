@@ -135,7 +135,6 @@ info in the Plone user it creates (which above is just a user id).
     'email':foo@test.org
     'filters':{}
     'fullname':Test Foo
-    'localperms':{}
     'location':Princeton, NJ, US
     'user_id':foo
 

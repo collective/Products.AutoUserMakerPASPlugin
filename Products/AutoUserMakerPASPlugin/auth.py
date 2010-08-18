@@ -220,7 +220,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
     >>> handler = ExtractionPlugin()
     >>> handler.extractCredentials(request)
-    {'user_id': 'foobar', 'description': None, 'localperms': {}, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
+    {'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
 
     """
     security = ClassSecurityInfo()
