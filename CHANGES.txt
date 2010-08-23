@@ -1,7 +1,7 @@
 0.8a2 (svn/unreleased)
 ======================
 
- - 
+ - Factored out setting of local roles to ShibbolethPermissions
 
 0.8a1 (2010-04-06)
 ==================
