@@ -204,6 +204,9 @@ class MockUser:
         """Return an empty tuple."""
         return ()
 
+    def getUserName(self):
+        """The id is the name in our case """
+        return self.sUserId
 
 class ExtractionPlugin(BasePlugin, PropertyManager):
     """ A simple extraction plugin that retrieves its credentials
