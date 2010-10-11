@@ -20,7 +20,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.interfaces.plugins import (
     IAuthenticationPlugin, IExtractionPlugin, IRoleAssignerPlugin,
-    IRolesPlugin, IUserAdderPlugin)
+    IRolesPlugin, IUserAdderPlugin, IChallengePlugin)
 from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
@@ -44,6 +44,9 @@ httpSharingLabelsKey = 'http_sharing_labels'
 usernameKey = 'user_id'
 
 PWCHARS = string.letters + string.digits + string.punctuation
+
+_defaultChallengePattern = re.compile('http://(.*)')
+_defaultChallengeReplacement = r'https://\1'
 
 def safe_int(s, default=0):
     try:
@@ -180,7 +183,40 @@ class AutoUserMakerPASPlugin(BasePlugin):
             return None  # Pass control to the next IAuthenticationPlugin.
         return userId, userId
 
-classImplements(AutoUserMakerPASPlugin, IAuthenticationPlugin)
+
+    security.declarePublic('loginUrl')
+    def loginUrl(self, currentUrl):
+        """Given the URL of the page where the user presently is, return the URL which will prompt him for authentication and land him at the same place.
+        
+        If something goes wrong, return ''.
+        
+        """
+        usingCustomRedirection = False #self.config[useCustomRedirectionKey]
+        #pattern, replacement = usingCustomRedirection and (self.config[challengePatternKey], self.config[challengeReplacementKey]) or (_defaultChallengePattern, _defaultChallengeReplacement)
+        pattern, replacement = _defaultChallengePattern, _defaultChallengeReplacement
+        match = pattern.match(currentUrl)
+        # Let the web server's auth have a swing at it:
+        if match:  # will usually start with http:// but may start with https:// (and thus not match) if you're already logged in and try to access something you're not privileged to
+            try:
+                destination = match.expand(replacement)
+            except re.error:  # Don't screw up your replacement string, please. If you do, we at least try not to punish the user with a traceback.
+                if usingCustomRedirection:
+                    logger.error("Your custom WebServerAuth Replacement Pattern could not be applied to a URL which needs authentication: %s. Please correct it." % currentUrl)
+            else:
+                return destination
+        # Our regex didn't match, or something went wrong.
+        return ''
+
+    security.declarePrivate('challenge')
+    def challenge(self, request, response):
+        url = self.loginUrl(request.ACTUAL_URL)
+        if url:
+            response.redirect(url, lock=True)
+            return True
+        else:  # Pass off control to the next challenge plugin.
+            return False
+
+classImplements(AutoUserMakerPASPlugin, IAuthenticationPlugin, IChallengePlugin)
 
 class MockUser:
     """Used in ExtractionPlugin.extractCredentials for testing.
