@@ -34,6 +34,8 @@ def install(portal, reinstall=False):
             plugins.activatePlugin(interface, pluginId)  # plugins is a PluginRegistry
         except KeyError:
             continue
+    while plugins.listPluginIds(IChallengePlugin)[0] != pluginId:
+        plugins.movePluginsUp(IChallengePlugin, (pluginId,))
 
     if reinstall:
         import pickle
