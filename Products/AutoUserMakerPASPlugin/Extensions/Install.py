@@ -3,7 +3,7 @@
 
 from Products.CMFCore.utils import getToolByName
 from Products.PluggableAuthService.interfaces.plugins import (
-    IAuthenticationPlugin, IExtractionPlugin)
+    IAuthenticationPlugin, IExtractionPlugin, IChallengePlugin)
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 
@@ -29,7 +29,7 @@ def install(portal, reinstall=False):
 
     # Activate it:
     plugins = acl_users.plugins
-    for interface in [IAuthenticationPlugin, IExtractionPlugin]:
+    for interface in [IAuthenticationPlugin, IExtractionPlugin, IChallengePlugin]:
         try:
             plugins.activatePlugin(interface, pluginId)  # plugins is a PluginRegistry
         except KeyError:
