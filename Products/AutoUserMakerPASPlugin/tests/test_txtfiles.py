@@ -9,10 +9,8 @@ import os
 import unittest
 from zope.testing import doctest
 from Testing import ZopeTestCase as ztc
-import Products.PloneTestCase.PloneTestCase as ptc
 
-ptc.setupPloneSite()
-ptc.installProduct('AutoUserMakerPASPlugin')
+from Products.AutoUserMakerPASPlugin.tests.base import PluginFunctionalTestCase
 
 def listDoctests():
     home = os.path.dirname(__file__)
@@ -21,7 +19,7 @@ def listDoctests():
 def test_suite():
     files = listDoctests()
     tests = [ztc.FunctionalDocFileSuite('tests/' + os.path.basename(filename),
-                                        test_class=ptc.FunctionalTestCase,
+                                        test_class=PluginFunctionalTestCase,
                                         package='Products.AutoUserMakerPASPlugin',
                                         optionflags=doctest.REPORT_ONLY_FIRST_FAILURE)
              for filename in files]

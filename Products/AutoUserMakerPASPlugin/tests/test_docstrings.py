@@ -8,16 +8,11 @@ __revision__ = '0.1'
 import unittest
 from zope.testing import doctest
 from Testing import ZopeTestCase as ztc
-from Products.PloneTestCase import PloneTestCase as ptc
 
-ptc.setupPloneSite()
-ptc.installProduct('AutoUserMakerPASPlugin')
+from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
 
 def test_suite():
     tests = (ztc.ZopeDocTestSuite('Products.AutoUserMakerPASPlugin.auth',
-                                  test_class=ptc.PloneTestCase,
+                                  test_class=PluginTestCase,
                                   optionflags=doctest.REPORT_ONLY_FIRST_FAILURE),)
     return unittest.TestSuite(tests)
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

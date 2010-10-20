@@ -11,9 +11,18 @@ def _firstIdOfClass(container, class_):
     """ Return the id of the first object of class `class_` within `container`.
     If there is none, return None.
     """
-    for id in container.objectIds():
+    for id in container.keys():
         if isinstance(container[id], class_):
             return id
+
+
+def addautousermakerplugin(acl_users, pluginId='AutoUserMakerPASPlugin'):
+    # http://wiki.zope.org/zope2/ObjectManager
+    constructors = acl_users.manage_addProduct[pluginId]
+    constructors.manage_addAutoUserMaker(pluginId,
+                                         title='AutoUserMakerPAS Plugin')
+    return acl_users[pluginId]
+
 
 def install(portal, reinstall=False):
     acl_users = getToolByName(portal, 'acl_users')
@@ -21,11 +30,7 @@ def install(portal, reinstall=False):
     # Put an apachepas multiplugin in the acl_users folder, if there isn't one:
     pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
     if not pluginId:
-        pluginId = 'AutoUserMakerPASPlugin'
-        # http://wiki.zope.org/zope2/ObjectManager
-        constructors = acl_users.manage_addProduct[pluginId]
-        constructors.manage_addAutoUserMaker(pluginId,
-                                             title='AutoUserMakerPAS Plugin')
+        addautousermakerplugin(acl_users)
 
     # Activate it:
     plugins = acl_users.plugins

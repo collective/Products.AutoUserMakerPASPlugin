@@ -2,7 +2,8 @@
 ======================
 
  - Factored out setting of local roles to ShibbolethPermissions
- - Send UserLoggedInEvent
+ - Trigger UserLoggedInEvent
+ - Added challenge-plugin
 
 0.8a1 (2010-04-06)
 ==================

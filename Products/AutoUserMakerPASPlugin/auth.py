@@ -64,18 +64,9 @@ class AutoUserMakerPASPlugin(BasePlugin):
     """ An authentication plugin that creates member objects
 
        AutoUserMakerPASPlugin expects a mapping like ExtractionPlugin
-       returns, makes the user specified therein, gives him the Member role so
-       Plone recognizes him and passes control to the next
+       returns, makes the user specified therein, gives him the Member
+       role so Plone recognizes him and passes control to the next
        authentication plugin.
-
-       This unittest doesn't show much since this really needs integration
-       testing:
-       >>> from Products.AutoUserMakerPASPlugin.auth import \
-               AutoUserMakerPASPlugin
-       >>> AutoUserMakerPASPlugin('test').authenticateCredentials({})
-       >>> AutoUserMakerPASPlugin('test').authenticateCredentials(
-       ...        {'user_id': 'foobar'})
-       ('foobar', 'foobar')
     """
     security = ClassSecurityInfo()
 
@@ -206,17 +197,23 @@ class AutoUserMakerPASPlugin(BasePlugin):
         If something goes wrong, return ''.
 
         """
-        usingCustomRedirection = False #self.config[useCustomRedirectionKey]
-        #pattern, replacement = usingCustomRedirection and (self.config[challengePatternKey], self.config[challengeReplacementKey]) or (_defaultChallengePattern, _defaultChallengeReplacement)
+        usingCustomRedirection = False
         pattern, replacement = _defaultChallengePattern, _defaultChallengeReplacement
         match = pattern.match(currentUrl)
         # Let the web server's auth have a swing at it:
-        if match:  # will usually start with http:// but may start with https:// (and thus not match) if you're already logged in and try to access something you're not privileged to
+        if match:
+            # will usually start with http:// but may start with
+            # https:// (and thus not match) if you're already logged in
+            # and try to access something you're not privileged to
             try:
                 destination = match.expand(replacement)
-            except re.error:  # Don't screw up your replacement string, please. If you do, we at least try not to punish the user with a traceback.
+            except re.error:
+                # Don't screw up your replacement string, please. If you do, we
+                # at least try not to punish the user with a traceback.
                 if usingCustomRedirection:
-                    logger.error("Your custom WebServerAuth Replacement Pattern could not be applied to a URL which needs authentication: %s. Please correct it." % currentUrl)
+                    logger.error(("Your custom Replacement Pattern could not be "
+                                  "applied to a URL which needs authentication:"
+                                  " %s. Please correct it." % currentUrl))
             else:
                 return destination
         # Our regex didn't match, or something went wrong.
