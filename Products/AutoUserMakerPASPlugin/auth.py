@@ -6,6 +6,7 @@ import re
 import string
 
 from persistent.list import PersistentList
+from zope.event import notify
 from AccessControl import ClassSecurityInfo
 try:
     # Zope >= 2.12
@@ -25,6 +26,9 @@ from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
+
+from Products.PlonePAS.events import UserLoggedInEvent
+from Products.PlonePAS.events import UserInitialLoginInEvent
 
 from Products.PluggableAuthService.PluggableAuthService import \
     _SWALLOWABLE_PLUGIN_EXCEPTIONS
@@ -47,6 +51,7 @@ PWCHARS = string.letters + string.digits + string.punctuation
 
 _defaultChallengePattern = re.compile('http://(.*)')
 _defaultChallengeReplacement = r'https://\1'
+
 
 def safe_int(s, default=0):
     try:
@@ -85,8 +90,16 @@ class AutoUserMakerPASPlugin(BasePlugin):
         mappings = credentials.pop('_getMappings', [])
         userId = credentials.get(usernameKey, None)
 
-        if userId is not None and self._getPAS() is not None and \
-           self._getPAS().getUserById(userId) is None:
+        pas = self._getPAS()
+
+        if not pas:
+            return None
+        elif userId is None:
+            return None  # Pass control to the next IAuthenticationPlugin.
+
+        user = pas.getUserById(userId)
+
+        if user is None:
             # Make a user with id `userId`, and assign him at least the Member
             # role, since user doesn't exist.
 
@@ -179,17 +192,19 @@ class AutoUserMakerPASPlugin(BasePlugin):
             source_groups = getToolByName(self, 'source_groups')
             for ii in groups:
                 source_groups.addPrincipalToGroup(user.getId(), ii)
-        if userId is None:
-            return None  # Pass control to the next IAuthenticationPlugin.
+            notify(UserInitialLoginInEvent(user))
+        else:
+            notify(UserLoggedInEvent(user))
+
         return userId, userId
 
 
     security.declarePublic('loginUrl')
     def loginUrl(self, currentUrl):
         """Given the URL of the page where the user presently is, return the URL which will prompt him for authentication and land him at the same place.
-        
+
         If something goes wrong, return ''.
-        
+
         """
         usingCustomRedirection = False #self.config[useCustomRedirectionKey]
         #pattern, replacement = usingCustomRedirection and (self.config[challengePatternKey], self.config[challengeReplacementKey]) or (_defaultChallengePattern, _defaultChallengeReplacement)

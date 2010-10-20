@@ -2,6 +2,7 @@
 ======================
 
  - Factored out setting of local roles to ShibbolethPermissions
+ - Send UserLoggedInEvent
 
 0.8a1 (2010-04-06)
 ==================
