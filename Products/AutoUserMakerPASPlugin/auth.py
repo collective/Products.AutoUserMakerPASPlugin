@@ -11,6 +11,7 @@ from AccessControl import ClassSecurityInfo
 try:
     # Zope >= 2.12
     from App.class_init import InitializeClass
+    InitializeClass  # make pyflakes happy ...
 except ImportError:
     # Zope < 2.12
     from Globals import InitializeClass
@@ -155,7 +156,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                                 match = oRe.search(credentials['filters'][ii])
                             except (ConflictError, KeyboardInterrupt):
                                 raise
-                            except Exception, e:
+                            except Exception:
                                 match = False
                             if match:
                                 assignRole = True
@@ -788,7 +789,6 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         # valid roles
         for role in self.getRoles():
             saveVals['roles'][role['id']] = reqget(role['id'], '')
-        users = self.getUsers()
         userid = reqget('userid', '')
         if userid in self.getUsers():
             saveVals['userid'] = userid

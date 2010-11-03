@@ -1,5 +1,3 @@
-import unittest
-
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
 from Products.AutoUserMakerPASPlugin.Extensions.Install import \
     addautousermakerplugin
