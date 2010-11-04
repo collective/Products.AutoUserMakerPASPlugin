@@ -127,7 +127,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                             membershipTool.createMemberArea(userId)
                     except (ConflictError, KeyboardInterrupt):
                         raise
-                    except Exception, e:
+                    except Exception:
                         pass
                     userProps = user.getPropertysheet('mutable_properties')
                     for ii in ('fullname', 'description', 'email', 'location'):
