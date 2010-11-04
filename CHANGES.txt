@@ -1,5 +1,5 @@
-0.8a2 (svn/unreleased)
-======================
+0.8b1 (2010-11-04)
+==================
 
  - Factored out setting of local roles to ShibbolethPermissions
  - Trigger UserLoggedInEvent
