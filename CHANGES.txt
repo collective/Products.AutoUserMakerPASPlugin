@@ -1,7 +1,11 @@
 0.8b2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Allow other PAS plugins to handle credentials by calling
+  ``updateCredentials`` when authenticating. This allows for existing
+  session or cookie plugins (implementing ``ICredentialsUpdatePlugin``)
+  to take over handling a user's authentication.
+  [davidjb]
 
 
 0.8b1 (2010-11-04)

@@ -13,6 +13,12 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
         self.assertFalse(auth({}))
         self.assertEqual(auth({'user_id': 'foobar'}), ('foobar', 'foobar'))
 
+    def test_authentication_session(self):
+        """ Test that authenticating will create a session, if configured."""
+        if 'session' in self.portal.acl_users:
+            self.plugin.authenticateCredentials({'user_id': 'foobar'})
+            self.assertTrue('__ac' in self.plugin.REQUEST.RESPONSE.cookies)
+
     def test_challenge(self):
         class DummyReq(object):
 

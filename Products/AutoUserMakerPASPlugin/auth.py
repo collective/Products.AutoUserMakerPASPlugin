@@ -188,6 +188,9 @@ class AutoUserMakerPASPlugin(BasePlugin):
         else:
             notify(UserLoggedInEvent(user))
 
+        #Allow other plugins to handle credentials; eg session or cookie
+        pas.updateCredentials(self.REQUEST,
+                              self.REQUEST.RESPONSE, userId, "")
         return userId, userId
 
 
