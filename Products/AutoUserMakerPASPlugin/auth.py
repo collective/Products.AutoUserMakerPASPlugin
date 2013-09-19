@@ -75,6 +75,17 @@ class AutoUserMakerPASPlugin(BasePlugin):
         self.id = pluginId
         self.title = title
 
+    def _updateUserProperties(self, user, credentials):
+        """ Update the given user properties from the set of credentials.
+
+        This is utilised when first creating a user, and to update
+        their information when logging in again later.
+        """
+        userProps = user.getPropertysheet('mutable_properties')
+        for ii in ('fullname', 'description', 'email', 'location'):
+            if credentials.has_key(ii):
+                userProps.setProperty(user, ii, credentials[ii])
+
     security.declarePrivate('authenticateCredentials')
     def authenticateCredentials(self, credentials):
         """See class's docstring and IAuthenticationPlugin."""
@@ -129,10 +140,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                         raise
                     except Exception:
                         pass
-                    userProps = user.getPropertysheet('mutable_properties')
-                    for ii in ('fullname', 'description', 'email', 'location'):
-                        if credentials.has_key(ii):
-                            userProps.setProperty(user, ii, credentials[ii])
+                    self._updateUserProperties(user, credentials)
                     break
 
             # Build a list of roles to assign to the user, always with Member
@@ -186,6 +194,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                 source_groups.addPrincipalToGroup(user.getId(), ii)
             notify(UserInitialLoginInEvent(user))
         else:
+            self._updateUserProperties(user, credentials)
             notify(UserLoggedInEvent(user))
 
         #Allow other plugins to handle credentials; eg session or cookie
