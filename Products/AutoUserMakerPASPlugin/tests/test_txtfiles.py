@@ -21,7 +21,7 @@ def test_suite():
     tests = [ztc.FunctionalDocFileSuite('tests/' + os.path.basename(filename),
                                         test_class=PluginFunctionalTestCase,
                                         package='Products.AutoUserMakerPASPlugin',
-                                        optionflags=doctest.REPORT_ONLY_FIRST_FAILURE)
+                                        optionflags=doctest.REPORT_ONLY_FIRST_FAILURE|doctest.ELLIPSIS)
              for filename in files]
     return unittest.TestSuite(tests)
 

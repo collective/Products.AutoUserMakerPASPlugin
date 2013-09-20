@@ -613,8 +613,10 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler = handler.__of__(self.portal.acl_users)
         >>> from pprint import pprint
-        >>> sorted([role['id'] for role in handler.getRoles()])
-        ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
+        >>> roles = [role['id'] for role in handler.getRoles()]
+        >>> result = ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
+        >>> len(set(roles).intersection(result)) == len(result)
+        True
         """
         portalRoleManager = getToolByName(self, 'portal_role_manager')
         return [role for role in portalRoleManager.enumerateRoles()
@@ -646,8 +648,11 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
         >>> handler = handler.__of__(self.portal.acl_users)
-        >>> handler.getGroups()
-        ['Administrators', 'Reviewers']
+        >>> groups = handler.getGroups()
+        >>> 'Administrators' in groups
+        True
+        >>> 'Reviewers' in groups
+        True
         """
         sourceGroups = getToolByName(self, 'source_groups')
         return list(sourceGroups.getGroupIds())

@@ -10,6 +10,8 @@
   session or cookie plugins (implementing ``ICredentialsUpdatePlugin``)
   to take over handling a user's authentication.
   [davidjb]
+- Ensure tests pass on Plone 4.1+.
+  [davidjb]
 
 
 0.8b1 (2010-11-04)

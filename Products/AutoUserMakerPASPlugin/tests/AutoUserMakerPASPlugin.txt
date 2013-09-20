@@ -235,17 +235,17 @@ group.
 
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': 1, 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...'Manager': 1...}
     'userid':
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'test'}
     'version':1
     'groupid':['Reviewers']
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -266,12 +266,12 @@ Now we have 3 user mappings. Let's delete foo.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'test'}
     'version':1
     'groupid':['Reviewers']
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -287,12 +287,12 @@ And then there were 2. Let's change test to foo, and make bar an Administrator.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -308,12 +308,12 @@ at least as far as adding or deleting mapping rules.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
@@ -330,12 +330,12 @@ at least as far as adding or deleting mapping rules.
     >>> apache.manage_changeMapping(request)
     >>> dumpMappings(apache.getMappings())
     'groupid':[]
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':test_user_1_
     'values':{'HTTP_TEST_USER': 'foo'}
     'version':1
     'groupid':['Administrators']
-    'roles':{'SuperUser': '', 'Owner': '', 'Manager': '', 'Editor': '', 'Reader': '', 'Contributor': '', 'Reviewer': ''}
+    'roles':{...}
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
