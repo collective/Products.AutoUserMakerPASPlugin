@@ -1,6 +1,10 @@
 0.8b2 (unreleased)
 ==================
 
+- Move the password generation function to be an instance method.
+  This allows for the potential to override this function and performance
+  actions using information drawn from the plugin, request etc.
+  [davidjb]
 - Update a user's properties when they authenticate. This
   handles the situation where a user's details may change (such as name,
   email address, etc) upon next authentication.

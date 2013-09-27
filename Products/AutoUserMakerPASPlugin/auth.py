@@ -86,6 +86,10 @@ class AutoUserMakerPASPlugin(BasePlugin):
             if credentials.has_key(ii):
                 userProps.setProperty(user, ii, credentials[ii])
 
+    def _generatePassword(self):
+        """ Return a obfuscated password never used for login """
+        return ''.join([choice(PWCHARS) for ii in range(10)])
+
     security.declarePrivate('authenticateCredentials')
     def authenticateCredentials(self, credentials):
         """See class's docstring and IAuthenticationPlugin."""
@@ -106,9 +110,6 @@ class AutoUserMakerPASPlugin(BasePlugin):
             # Make a user with id `userId`, and assign him at least the Member
             # role, since user doesn't exist.
 
-            def generatePassword():
-                """ Return a obfuscated password never used for login """
-                return ''.join([choice(PWCHARS) for ii in range(10)])
 
             # Make sure we actually have user adders and role assigners. It
             # would be ugly to succeed at making the user but be unable to
@@ -128,7 +129,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
             # Add the user to the first IUserAdderPlugin that works:
             user = None
             for _, curAdder in userAdders:
-                if curAdder.doAddUser(userId, generatePassword()):
+                if curAdder.doAddUser(userId, self._generatePassword()):
                     # Assign a dummy password. It'll never be used;.
                     user = self._getPAS().getUser(userId)
                     try:
