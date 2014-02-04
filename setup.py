@@ -48,6 +48,7 @@ setup(name='Products.AutoUserMakerPASPlugin',
       namespace_packages=['Products'],
       include_package_data=True,
       zip_safe=False,
+      setup_requires=['setuptools-git'],
       install_requires=[
           'setuptools',
           'Products.PlonePAS'
