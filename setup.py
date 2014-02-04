@@ -48,6 +48,9 @@ setup(name='Products.AutoUserMakerPASPlugin',
       namespace_packages=['Products'],
       include_package_data=True,
       zip_safe=False,
-      install_requires=['setuptools', ],
+      install_requires=[
+          'setuptools',
+          'Products.PlonePAS'
+      ],
       entry_points=""" """,
       )
