@@ -10,7 +10,7 @@ def read(*rnames):
 version = '0.8b2dev'
 
 long_description = (
-    read('README.txt')
+    read('README.rst')
     + '\n' +
     'Change history\n'
     '**************\n'
@@ -20,7 +20,7 @@ long_description = (
     'Detailed Documentation\n'
     '**********************\n'
     + '\n' +
-    read('Products', 'AutoUserMakerPASPlugin', 'README.txt')
+    read('Products', 'AutoUserMakerPASPlugin', 'README.rst')
     + '\n' +
     'Contributors\n'
     '************\n'
@@ -36,6 +36,7 @@ setup(name='Products.AutoUserMakerPASPlugin',
       classifiers=[
         'Framework :: Zope2',
         'Framework :: Plone',
+        'Framework :: Plone :: 4.0',
         'Programming Language :: Python',
         ],
       keywords='plone authentication shibboleth pas security',
