@@ -156,6 +156,7 @@ Let's set up a pair of form replication classes:
 Now, let's check the default configuration:
 
     >>> inOrder(apache.getConfig())
+    'auto_update_user_properties':0
     'http_authz_tokens':()
     'http_commonname':('HTTP_SHIB_PERSON_COMMONNAME',)
     'http_country':('HTTP_SHIB_ORGPERSON_C',)
@@ -186,6 +187,7 @@ pseudo REQUEST object, then get the results and print in order.
     ...                     "http_sharing_labels": 'TEST_TITLE'})
     >>> apache.manage_changeConfig(request)
     >>> inOrder(apache.getConfig())
+    'auto_update_user_properties':0
     'http_authz_tokens':('HTTP_TEST_USER',)
     'http_commonname':('HTTP_TEST_COMMONNAME',)
     'http_country':('HTTP_TEST_COUNTRY',)
@@ -204,6 +206,7 @@ the above output.
 
     >>> request = MockForm({'no_such_field': 'junk'})
     >>> inOrder(apache.getConfig())
+    'auto_update_user_properties':0
     'http_authz_tokens':('HTTP_TEST_USER',)
     'http_commonname':('HTTP_TEST_COMMONNAME',)
     'http_country':('HTTP_TEST_COUNTRY',)
@@ -339,4 +342,3 @@ at least as far as adding or deleting mapping rules.
     'userid':
     'values':{'HTTP_TEST_USER': 'bar'}
     'version':1
-

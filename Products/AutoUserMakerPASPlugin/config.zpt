@@ -118,6 +118,20 @@
       </label>
     </p>
 
+    <h3 i18n:translate="heading_auto_update_user_properties">User Properties Update</h3>
+    <p>
+      <input type="checkbox" id="auto_update_user_properties"
+             name="auto_update_user_properties" value="1"
+             tal:attributes="checked python:'checked' if config['auto_update_user_properties'] else ''"/>
+      <label for="auto_update_user_properties" i18n:translate="description_auto_update_user_properties">
+        Automatically update user properties with values from request
+        headers.<br/>
+        When enabling this option, make sure this plugin runs only
+        once per login session, otherwise it will update user
+        properties on every request potentially causing ConflictErrors.
+      </label>
+    </p>
+
     <h3 i18n:translate="heading_user_mapping_headers">User Mapping Headers</h3>
     <p>
       <label for="http_authz_tokens" i18n:translate="description_shib_token_list">

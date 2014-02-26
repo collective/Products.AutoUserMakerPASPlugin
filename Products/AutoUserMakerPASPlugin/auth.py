@@ -43,6 +43,7 @@ httpEmailKey = 'http_email'
 httpLocalityKey = 'http_locality'
 httpStateKey = 'http_state'
 httpCountryKey = 'http_country'
+autoUpdateUserPropertiesKey = 'auto_update_user_properties'
 httpAuthzTokensKey = 'http_authz_tokens'
 httpSharingTokensKey = 'http_sharing_tokens'
 httpSharingLabelsKey = 'http_sharing_labels'
@@ -196,7 +197,9 @@ class AutoUserMakerPASPlugin(BasePlugin):
                 source_groups.addPrincipalToGroup(user.getId(), ii)
             notify(UserInitialLoginInEvent(user))
         else:
-            self._updateUserProperties(user, credentials)
+            config = self.getConfig()
+            if config.get(autoUpdateUserPropertiesKey, 0):
+                self._updateUserProperties(user, credentials)
             notify(UserLoggedInEvent(user))
 
         #Allow other plugins to handle credentials; eg session or cookie
@@ -302,6 +305,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
             (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
             (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
+            (autoUpdateUserPropertiesKey, 'int', 'w', 0),
             (httpAuthzTokensKey, 'lines', 'w', []),
             (httpSharingTokensKey, 'lines', 'w', []),
             (httpSharingLabelsKey, 'lines', 'w', []),
@@ -334,7 +338,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler = ExtractionPlugin()
         >>> import pprint
         >>> pprint.pprint(handler.getConfig())
-        {'http_authz_tokens': (),
+        {'auto_update_user_properties': 0,
+         'http_authz_tokens': (),
          'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',),
          'http_country': ('HTTP_SHIB_ORGPERSON_C',),
          'http_description': ('HTTP_SHIB_ORGPERSON_TITLE',),
@@ -357,6 +362,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             httpLocalityKey: self.getProperty(httpLocalityKey),
             httpStateKey: self.getProperty(httpStateKey),
             httpCountryKey: self.getProperty(httpCountryKey),
+            autoUpdateUserPropertiesKey: self.getProperty(autoUpdateUserPropertiesKey),
             httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
             httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
             httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey)}
@@ -686,6 +692,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         reqget = REQUEST.form.get
         strip = safe_int(reqget(stripDomainNamesKey, 1), default=1)
         strip = max(min(strip, 2), 0) # 0 < x < 2
+        autoupdate = safe_int(reqget(autoUpdateUserPropertiesKey, 0),
+                              default=0)
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
         formTokens = tuple(reqget(httpAuthzTokensKey, '').splitlines())
@@ -708,6 +716,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             httpLocalityKey: reqget(httpLocalityKey, ''),
             httpStateKey: reqget(httpStateKey, ''),
             httpCountryKey: reqget(httpCountryKey, ''),
+            autoUpdateUserPropertiesKey: autoupdate,
             httpAuthzTokensKey: reqget(httpAuthzTokensKey, ''),
             httpSharingTokensKey: reqget(httpSharingTokensKey, ''),
             httpSharingLabelsKey: reqget(httpSharingLabelsKey, '')})

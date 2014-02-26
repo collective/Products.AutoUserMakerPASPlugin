@@ -29,6 +29,9 @@ msgstr "Domain Name Stripping"
 msgid "heading_user_setup_headers"
 msgstr "User Setup Headers"
 
+msgid "heading_auto_update_user_properties"
+msgstr "User Properties Update"
+
 msgid "heading_user_authorization_headers"
 msgstr "User Authorization Headers"
 
@@ -95,6 +98,9 @@ msgstr "User's state (HTTP_SHIB_ORGPERSON_STATE)"
 
 msgid "description_http_county"
 msgstr "User's country (HTTP_SHIB_ORGPERSON_C)"
+
+msgid "description_auto_update_user_properties"
+msgstr "Automatically update user properties with values from request headers.<br/>When enabling this option, make sure this plugin runs only once per login session, otherwise it will update user properties on every request potentially causing ConflictErrors."
 
 msgid "description_dont_strip_domain_names"
 msgstr "Do not strip domain names from usernames."
