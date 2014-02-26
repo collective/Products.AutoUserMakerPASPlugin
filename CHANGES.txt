@@ -3,6 +3,7 @@
 
 - Let PAS decide where to store user properties. Allows e.g. Membrane
   to store properties on the user object itself. [gweis]
+- Make update of users's properties optional. [gweis]
 
 
 0.9 (2014-02-04)
