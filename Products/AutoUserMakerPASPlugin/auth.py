@@ -81,10 +81,11 @@ class AutoUserMakerPASPlugin(BasePlugin):
         This is utilised when first creating a user, and to update
         their information when logging in again later.
         """
-        userProps = user.getPropertysheet('mutable_properties')
-        for ii in ('fullname', 'description', 'email', 'location'):
-            if credentials.has_key(ii):
-                userProps.setProperty(user, ii, credentials[ii])
+        userProps = dict((key, credentials[key]) for
+                         key in ('fullname', 'description',
+                                 'email', 'location')
+                         if credentials.get(key) is not None)
+        user.setProperties(**userProps)
 
     def _generatePassword(self):
         """ Return a obfuscated password never used for login """
