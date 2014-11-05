@@ -2,6 +2,7 @@
 ================
 
 - Remove triggering of UserLoggedInEvent (shouldn't be done in PAS plugin)
+  [gweis]
 
 
 1.0 (2014-02-26)
