@@ -1,4 +1,4 @@
-1.1 (unreleased)
+1.1 (2014-11-06)
 ================
 
 - Remove triggering of UserLoggedInEvent (shouldn't be done in PAS plugin)
