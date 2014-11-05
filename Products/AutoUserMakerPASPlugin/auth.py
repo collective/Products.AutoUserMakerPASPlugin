@@ -6,7 +6,6 @@ import re
 import string
 
 from persistent.list import PersistentList
-from zope.event import notify
 from AccessControl import ClassSecurityInfo
 try:
     # Zope >= 2.12
@@ -27,9 +26,6 @@ from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
-
-from Products.PlonePAS.events import UserLoggedInEvent
-from Products.PlonePAS.events import UserInitialLoginInEvent
 
 from Products.PluggableAuthService.PluggableAuthService import \
     _SWALLOWABLE_PLUGIN_EXCEPTIONS
@@ -195,12 +191,10 @@ class AutoUserMakerPASPlugin(BasePlugin):
             source_groups = getToolByName(self, 'source_groups')
             for ii in groups:
                 source_groups.addPrincipalToGroup(user.getId(), ii)
-            notify(UserInitialLoginInEvent(user))
         else:
             config = self.getConfig()
             if config.get(autoUpdateUserPropertiesKey, 0):
                 self._updateUserProperties(user, credentials)
-            notify(UserLoggedInEvent(user))
 
         #Allow other plugins to handle credentials; eg session or cookie
         pas.updateCredentials(self.REQUEST,
