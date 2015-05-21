@@ -31,7 +31,7 @@ long_description = (
 
 setup(name='Products.AutoUserMakerPASPlugin',
       version=version,
-      description="Automatically create PAS users when authenitcation in Plone",
+      description="Automatically create PAS users when authentication in Plone",
       long_description=long_description,
       classifiers=[
         'Framework :: Zope2',
