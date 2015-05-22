@@ -5,7 +5,7 @@
 *.mo
 *.egg
 *.EGG
-*.egg-info
+*.egg*
 *.EGG-INFO
 *.kpf
 *.swp

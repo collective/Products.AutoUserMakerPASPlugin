@@ -1,0 +1,43 @@
+# --- PLEASE EDIT THE LINES BELOW CORRECTLY ---
+# SOME DESCRIPTIVE TITLE.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2015-05-22 06:32+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI +ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"Language-Code: en\n"
+"Language-Name: English\n"
+"Preferred-Encodings: utf-8 latin1\n"
+"Domain: AutoUserMakerPASPlugin\n"
+
+#: ./add-AutoUserMakerPASPlugin.zpt:24
+msgid "add handler"
+msgstr ""
+
+#. Default: "Add Auto User Maker"
+#: ./add-AutoUserMakerPASPlugin.zpt:5
+msgid "heading_add_autousermakerpasplugin"
+msgstr ""
+
+#. Default: "Id"
+#: ./add-AutoUserMakerPASPlugin.zpt:14
+msgid "heading_id"
+msgstr ""
+
+#. Default: "Title"
+#: ./add-AutoUserMakerPASPlugin.zpt:18
+msgid "heading_title"
+msgstr ""
+
+#. Default: "To install the Auto User Maker, give it any Id and Title you like:"
+#: ./add-AutoUserMakerPASPlugin.zpt:7
+msgid "help_install_handler"
+msgstr ""
+
