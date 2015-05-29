@@ -65,8 +65,7 @@
         These values are python regular expressions that will be compiled
         as raw strings. See <a href="http://docs.python.org/lib/module-re.html">the
         python re module documentation</a> and <a href="http://diveintopython.org/regular_expressions/index.html">Dive
-        Into Python's Regular Expressions chapter</a>. The member role is
-        always given. To map an existing user to a Shibboleth user, select
+        Into Python's Regular Expressions chapter</a>.To map an existing user to a Shibboleth user, select
         the existing user id from the drop down list. In this case, roles
         given here are ignored (the Shibboleth user gets the already
         existing Plone user's roles).

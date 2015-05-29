@@ -132,6 +132,24 @@
       </label>
     </p>
 
+    <h3 i18n:translate="heading_user_default_roles">User Default Roles</h3>
+
+    <p>
+      <label i18n:translate="description_user_default_roles">
+        Assign these roles to all new users by default when way login for the first time.
+      </label>
+    </p>
+
+    <tal:row tal:repeat="role context/getRoles">
+      <p tal:define="input_id string:default_role_${role/id}">
+        <input type="checkbox" name="default_roles"
+        tal:attributes="id input_id;
+                        value role/id;
+                        checked python:role['id'] in config['default_roles'] and 'checked' or None"/>
+        <label tal:content="role/id" tal:attributes="for input_id">ROLE</label>
+      </p>
+    </tal:row>
+
     <h3 i18n:translate="heading_user_mapping_headers">User Mapping Headers</h3>
     <p>
       <label for="http_authz_tokens" i18n:translate="description_shib_token_list">
