@@ -1,12 +1,13 @@
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
-from Products.AutoUserMakerPASPlugin.Extensions.Install import \
-    addautousermakerplugin
-
+from Products.AutoUserMakerPASPlugin.Extensions.Install import pluginId
+from Products.CMFCore.utils import getToolByName
+from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 
 class AutoUserMakerPASPluginTests(PluginTestCase):
 
     def afterSetUp(self):
-        self.plugin = addautousermakerplugin(self.portal.acl_users)
+        acl_users = getToolByName(self.portal, 'acl_users')
+        self.plugin = acl_users._setObject(pluginId, ApacheAuthPluginHandler(pluginId))
 
     def test_authentication(self):
         auth = self.plugin.authenticateCredentials
