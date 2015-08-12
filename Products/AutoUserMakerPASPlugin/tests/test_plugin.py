@@ -1,5 +1,5 @@
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
-from Products.AutoUserMakerPASPlugin.Extensions.Install import pluginId
+from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
 from Products.CMFCore.utils import getToolByName
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 

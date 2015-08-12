@@ -8,7 +8,7 @@ from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 
 
-pluginId = 'AutoUserMakerPASPlugin'
+PLUGIN_ID = 'AutoUserMakerPASPlugin'
 
 
 def _firstIdOfClass(container, class_):
@@ -26,7 +26,7 @@ def install(portal, reinstall=False):
     # Put an apachepas multiplugin in the acl_users folder, if there isn't one:
     pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
     if not pluginId:
-        acl_users._setObject(pluginId, ApacheAuthPluginHandler(pluginId))
+        acl_users._setObject(PLUGIN_ID, ApacheAuthPluginHandler(PLUGIN_ID))
 
     # Activate it:
     plugins = acl_users.plugins
