@@ -288,7 +288,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
     >>> handler = ExtractionPlugin()
     >>> handler.extractCredentials(request)
-    {'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
+    {'_defaultRoles': ('Member',), 'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
 
     """
     security = ClassSecurityInfo()
@@ -339,6 +339,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> import pprint
         >>> pprint.pprint(handler.getConfig())
         {'auto_update_user_properties': 0,
+         'default_roles': ('Member',),
          'http_authz_tokens': (),
          'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',),
          'http_country': ('HTTP_SHIB_ORGPERSON_C',),

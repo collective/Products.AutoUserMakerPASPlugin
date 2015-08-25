@@ -130,6 +130,7 @@ info in the Plone user it creates (which above is just a user id).
     ...                        'HTTP_SHIB_ORGPERSON_STATE': 'NJ',
     ...                        'HTTP_SHIB_ORGPERSON_C': 'US'})
     >>> inOrder(apache.extractCredentials(request))
+    '_defaultRoles':('Member',)
     '_getMappings':[]
     'description':tester
     'email':foo@test.org
@@ -157,6 +158,7 @@ Now, let's check the default configuration:
 
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'default_roles':('Member',)
     'http_authz_tokens':()
     'http_commonname':('HTTP_SHIB_PERSON_COMMONNAME',)
     'http_country':('HTTP_SHIB_ORGPERSON_C',)
@@ -188,6 +190,7 @@ pseudo REQUEST object, then get the results and print in order.
     >>> apache.manage_changeConfig(request)
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'default_roles':()
     'http_authz_tokens':('HTTP_TEST_USER',)
     'http_commonname':('HTTP_TEST_COMMONNAME',)
     'http_country':('HTTP_TEST_COUNTRY',)
@@ -207,6 +210,7 @@ the above output.
     >>> request = MockForm({'no_such_field': 'junk'})
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'default_roles':()
     'http_authz_tokens':('HTTP_TEST_USER',)
     'http_commonname':('HTTP_TEST_COMMONNAME',)
     'http_country':('HTTP_TEST_COUNTRY',)
