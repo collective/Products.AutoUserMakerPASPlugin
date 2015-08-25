@@ -136,7 +136,7 @@
 
     <p>
       <label i18n:translate="description_user_default_roles">
-        Assign these roles to all new users by default when they login for the first time.
+        Assign these roles to all new users by default when way login for the first time.
       </label>
     </p>
 
