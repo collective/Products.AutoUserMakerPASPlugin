@@ -10,6 +10,9 @@
 - Ported tests to plone.app.testing
   [tomgross]
 
+- Allow other default roles than Member
+  [Sebastian Gottfried]
+
 1.1 (2014-11-06)
 ================
 
