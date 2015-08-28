@@ -11,21 +11,20 @@ existing acl_users.
 
 And make sure we can set up our plugin in the PAS instance.
 
-    >>> apache = utils.addAutoUserMakerPASPlugin(self.portal)
+    >>> apache = utils.addAutoUserMakerPASPlugin(layer['portal'])
     >>> apache
     <ApacheAuthPluginHandler at /plone/acl_users/AutoUserMakerPASPlugin>
+    >>> from transaction import commit
+    >>> commit()
 
 Now we set up the browser. Then we make sure the default user is a manager, and
 add the login header. By telling the testbrowser not to handle errors, we will
 get more output in the event one happens.
 
-    >>> from Products.Five.testbrowser import Browser
-    >>> from Products.PloneTestCase import PloneTestCase as ptc
-    >>> self.setRoles('Manager')
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic %s:%s' % (ptc.default_user, ptc.default_password))
-    >>> browser.handleErrors = False
-
+    >>> from plone.testing.z2 import Browser
+    >>> from plone.app.testing import SITE_OWNER_NAME, SITE_OWNER_PASSWORD
+    >>> browser = Browser(layer['app'])
+    >>> browser.addHeader('Authorization', 'Basic %s:%s' % (SITE_OWNER_NAME, SITE_OWNER_PASSWORD))
 
 Configuration Page Testing
 --------------------------
@@ -94,7 +93,8 @@ Now add an 'admin' user who is a member of the 'Administrators' group.
 Now add a user who logs in as 'deleteme', who gets made the PloneTestCase user.
 
     >>> browser.getControl(name='auth:list').value = 'deleteme'
-    >>> browser.getControl(name='userid').value = [ptc.default_user,]
+    >>> from plone.app.testing import TEST_USER_ID
+    >>> browser.getControl(name='userid').value = [TEST_USER_ID,]
     >>> browser.getControl('Add').click()
     >>> browser.getControl(name='auth-0:list').value
     'test'
