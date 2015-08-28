@@ -296,42 +296,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     security = ClassSecurityInfo()
 
     def __init__(self):
-        config = (
-            (stripDomainNamesKey, 'int', 'w', 1),
-            (stripDomainNamesListKey, 'lines', 'w', []),
-            (httpRemoteUserKey, 'lines', 'w', ['HTTP_X_REMOTE_USER',]),
-            (httpCommonnameKey, 'lines', 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
-            (httpDescriptionKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
-            (httpEmailKey, 'lines', 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
-            (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
-            (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
-            (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
-            (autoUpdateUserPropertiesKey, 'int', 'w', 0),
-            (httpAuthzTokensKey, 'lines', 'w', []),
-            (httpSharingTokensKey, 'lines', 'w', []),
-            (httpSharingLabelsKey, 'lines', 'w', []),
-            ('required_roles', 'lines', 'wd', []),
-            ('login_users', 'lines', 'wd', []),
-            (useCustomRedirectionKey, 'boolean', 'w', False),
-            (challengePatternKey, 'string', 'w', _defaultChallengePattern),
-            (challengeReplacementKey, 'string', 'w', _defaultChallengeReplacement),
-            (challengeHeaderEnabledKey, 'boolean', 'w', False),
-            (challengeHeaderNameKey, 'string', 'w', ""),
-            (defaultRolesKey, 'lines', 'w', ['Member']))
-        # Create any missing properties
-        ids = {}
-        for prop in (config):
-            # keep track of property names for quick lookup
-            ids[prop[0]] = True
-            if prop[0] not in self.propertyIds():
-                self.manage_addProperty(id=prop[0],
-                                        type=prop[1],
-                                        value=prop[3])
-                self._properties[-1]['mode'] = prop[2]
-        # Delete any existing properties that aren't in config
-        for prop in self._properties:
-            if not ids.has_key(prop['id']) and prop['id'] != 'prefix':
-                self.manage_delProperties(prop['id'])
         # Get a list for storing mappings
         self.authzMappings = PersistentList()
 
@@ -366,6 +330,43 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
          'use_custom_redirection': False}
 
         """
+        config = (
+            (stripDomainNamesKey, 'int', 'w', 1),
+            (stripDomainNamesListKey, 'lines', 'w', []),
+            (httpRemoteUserKey, 'lines', 'w', ['HTTP_X_REMOTE_USER',]),
+            (httpCommonnameKey, 'lines', 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
+            (httpDescriptionKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
+            (httpEmailKey, 'lines', 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
+            (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
+            (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
+            (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
+            (autoUpdateUserPropertiesKey, 'int', 'w', 0),
+            (httpAuthzTokensKey, 'lines', 'w', []),
+            (httpSharingTokensKey, 'lines', 'w', []),
+            (httpSharingLabelsKey, 'lines', 'w', []),
+            ('required_roles', 'lines', 'wd', []),
+            ('login_users', 'lines', 'wd', []),
+            (useCustomRedirectionKey, 'boolean', 'w', False),
+            (challengePatternKey, 'string', 'w', _defaultChallengePattern),
+            (challengeReplacementKey, 'string', 'w', _defaultChallengeReplacement),
+            (challengeHeaderEnabledKey, 'boolean', 'w', False),
+            (challengeHeaderNameKey, 'string', 'w', ""),
+            (defaultRolesKey, 'lines', 'w', ['Member']))
+        # Create any missing properties
+        ids = set()
+        for prop in config:
+            # keep track of property names for quick lookup
+            ids.add(prop[0])
+            if prop[0] not in self.propertyIds():
+                self.manage_addProperty(id=prop[0],
+                                        type=prop[1],
+                                        value=prop[3])
+                self._properties[-1]['mode'] = prop[2]
+        # Delete any existing properties that aren't in config
+        for prop in self._properties:
+            if prop['id'] not in ids and prop['id'] != 'prefix':
+                self.manage_delProperties(prop['id'])
+
         return {
             stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
             stripDomainNamesListKey: self.getProperty(stripDomainNamesListKey),
@@ -384,7 +385,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             challengePatternKey: self.getProperty(challengePatternKey),
             challengeReplacementKey: self.getProperty(challengeReplacementKey),
             challengeHeaderEnabledKey: self.getProperty(challengeHeaderEnabledKey),
-            challengeHeaderNameKey: self.getProperty(challengeHeaderNameKey)
+            challengeHeaderNameKey: self.getProperty(challengeHeaderNameKey),
             defaultRolesKey: self.getProperty(defaultRolesKey)}
 
     security.declarePublic('getSharingConfig')
