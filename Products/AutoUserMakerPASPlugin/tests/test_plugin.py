@@ -1,13 +1,14 @@
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
 from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
-from Products.CMFCore.utils import getToolByName
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from plone import api
 
 class AutoUserMakerPASPluginTests(PluginTestCase):
 
     def afterSetUp(self):
-        acl_users = getToolByName(self.portal, 'acl_users')
-        self.plugin = acl_users._setObject(pluginId, ApacheAuthPluginHandler(pluginId))
+        acl_users = api.portal.get_tool(name='acl_users')
+        acl_users._setObject(pluginId, ApacheAuthPluginHandler(pluginId))
+        self.plugin = acl_users[pluginId]
 
     def test_authentication(self):
         auth = self.plugin.authenticateCredentials
@@ -46,13 +47,5 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
             self.plugin.loginUrl('https://www.example.org/https/stays'), '')
         self.assertEqual(
             self.plugin.loginUrl('ftp://ftp.example.org/path'), '')
-
-
-def test_suite():
-    """ This is the unittest suite """
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(AutoUserMakerPASPluginTests))
-    return suite
 
 # EOF

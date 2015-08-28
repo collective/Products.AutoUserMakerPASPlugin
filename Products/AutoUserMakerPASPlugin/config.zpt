@@ -11,6 +11,69 @@
         tal:define="config context/getConfig"
         method="POST">
 
+<fieldset style="margin: .5em 0 0 0; padding: .5em; border: none">
+        <legend>To prompt the user for credentials, redirect...</legend>
+        <table border="0" cellspacing="0" cellpadding="2" style="margin: 0 0 1em 2em">
+            <tr valign="top">
+                <td>
+                    <input type="radio" name="use_custom_redirection" id="use_custom_redirection_0" value="0" tal:attributes="checked not:config/use_custom_redirection" />
+                </td>
+                <td>
+                    <label for="use_custom_redirection_0">To the HTTPS version of wherever he was going</label>
+                </td>
+            </tr>
+            <tr valign="top">
+                <td>
+                    <input type="radio" name="use_custom_redirection" id="use_custom_redirection_1" value="1" tal:attributes="checked config/use_custom_redirection" />
+                </td>
+                <td>
+                    <label for="use_custom_redirection_1">To a custom URL:</label>
+                </td>
+            </tr>
+            <tr valign="top">
+                <td>
+                </td>
+                <td>
+                    <table border="0" cellspacing="0" cellpadding="2">
+                        <tr valign="top">
+                            <td align="right">
+                                <label for="challenge_pattern">Matching&nbsp;pattern:</label>
+                            </td>
+                            <td>
+                                <input name="challenge_pattern" id="challenge_pattern" type="text" size="40" tal:attributes="value config/challenge_pattern" />
+                                <p class="form-help" style="margin: .5em 0">
+                                    <font size="-1">A regular expression matching every URL in your Plone site and capturing (using parentheses) the parts you'll need when constructing the replacement pattern.</font>
+                                </p>
+                                <p class="form-help" style="margin: .5em 0">
+                                    <font size="-1"><a href="http://www.python.org/doc/2.5.2/lib/re-syntax.html" target="_blank">Regular expression reference</a></font>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr valign="top">
+                            <td align="right">
+                                <label for="challenge_replacement">Replacement&nbsp;pattern:</label>
+                            </td>
+                            <td>
+                                <input name="challenge_replacement" id="challenge_replacement" type="text" size="40" tal:attributes="value config/challenge_replacement" />
+                                <p class="form-help" style="margin: .5em 0">
+                                    <font size="-1">The URL to redirect to. Make sure it's an HTTPS URL, and <a href="http://docs.python.org/library/re.html#re.sub">use backreferences</a> (like \1, \2, and so on) to substitute in the parts you captured above.</font>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr valign="top">
+                <td style="padding-top: 1em">
+                    <input type="checkbox" id="challenge_header_enabled" name="challenge_header_enabled" value="1" tal:attributes="checked config/challenge_header_enabled" />
+                </td>
+                <td style="padding-top: 1em">
+                   <label for="challenge_header_enabled">Only when the</label> <input type="text" size="40" name="challenge_header_name" id="challenge_header_name" tal:attributes="value config/challenge_header_name" /> <label for="challenge_header_enabled">request header is present</label>
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+    <fieldset style="margin: .5em 0 0 0; padding: .5em; border: none">
     <p>
       <tal:use_session tal:condition="python:config['strip_domain_names'] == 0">
         <input type="radio" id="strip_domain_names0" name="strip_domain_names"
@@ -179,6 +242,7 @@
                 tal:content="python:'\n'.join(config['http_sharing_labels'])">
       </textarea>
     </p>
+      </fieldset>
 
     <input type="submit" i18n:domain="plone"
            i18n:attributes="value" value="Save" />

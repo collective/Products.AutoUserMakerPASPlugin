@@ -29,6 +29,7 @@ from Products.PluggableAuthService.utils import classImplements
 
 from Products.PluggableAuthService.PluggableAuthService import \
     _SWALLOWABLE_PLUGIN_EXCEPTIONS
+from Products.CMFPlone.utils import safeToInt
 
 stripDomainNamesKey = 'strip_domain_names'
 stripDomainNamesListKey = 'strip_domain_name_list'
@@ -44,19 +45,17 @@ httpAuthzTokensKey = 'http_authz_tokens'
 httpSharingTokensKey = 'http_sharing_tokens'
 httpSharingLabelsKey = 'http_sharing_labels'
 usernameKey = 'user_id'
+useCustomRedirectionKey = 'use_custom_redirection'
+challengePatternKey = 'challenge_pattern'
+challengeReplacementKey = 'challenge_replacement'
+challengeHeaderEnabledKey = 'challenge_header_enabled'
+challengeHeaderNameKey = 'challenge_header_name'
 defaultRolesKey = 'default_roles'
 
 PWCHARS = string.letters + string.digits + string.punctuation
 
-_defaultChallengePattern = re.compile('http://(.*)')
+_defaultChallengePattern = 'http://(.*)'
 _defaultChallengeReplacement = r'https://\1'
-
-
-def safe_int(s, default=0):
-    try:
-        return int(s)
-    except (ValueError, TypeError):
-        return default
 
 
 class AutoUserMakerPASPlugin(BasePlugin):
@@ -109,7 +108,6 @@ class AutoUserMakerPASPlugin(BasePlugin):
         if user is None:
             # Make a user with id `userId`, and assign him at least the Member
             # role, since user doesn't exist.
-
 
             # Make sure we actually have user adders and role assigners. It
             # would be ugly to succeed at making the user but be unable to
@@ -209,32 +207,36 @@ class AutoUserMakerPASPlugin(BasePlugin):
 
     security.declarePublic('loginUrl')
     def loginUrl(self, currentUrl):
-        """Given the URL of the page where the user presently is, return the URL which will prompt him for authentication and land him at the same place.
+        """Given the URL of the page where the user presently is,
+        return the URL which will prompt him for authentication
+        and land him at the same place.
 
         If something goes wrong, return ''.
 
         """
-        usingCustomRedirection = False
-        pattern, replacement = _defaultChallengePattern, _defaultChallengeReplacement
-        match = pattern.match(currentUrl)
+        config = self.getConfig()
+        usingCustomRedirection = config[useCustomRedirectionKey]
+        pattern, replacement = usingCustomRedirection and \
+            (config[challengePatternKey], config[challengeReplacementKey]) or \
+            (_defaultChallengePattern, _defaultChallengeReplacement)
+        match = re.match(pattern, currentUrl)
         # Let the web server's auth have a swing at it:
-        if match:
-            # will usually start with http:// but may start with
-            # https:// (and thus not match) if you're already logged in
-            # and try to access something you're not privileged to
+        if match:  # will usually start with http:// but may start with
+                   # https://  (and thus not match) if you're already
+                   # logged in and try to access something you're not privileged to
             try:
                 destination = match.expand(replacement)
-            except re.error:
-                # Don't screw up your replacement string, please. If you do, we
-                # at least try not to punish the user with a traceback.
+            except re.error:  # Don't screw up your replacement string, please.
+                              #  If you do, we at least try not to punish the user with a traceback.
                 if usingCustomRedirection:
-                    logger.error(("Your custom Replacement Pattern could not be "
-                                  "applied to a URL which needs authentication:"
-                                  " %s. Please correct it." % currentUrl))
+                    logger.error("Your custom WebServerAuth Replacement "
+                                 "Pattern could not be applied to a URL " \
+                                 "which needs authentication: %s. Please correct it." % currentUrl)
             else:
                 return destination
         # Our regex didn't match, or something went wrong.
         return ''
+
 
     security.declarePrivate('challenge')
     def challenge(self, request, response):
@@ -310,6 +312,11 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             (httpSharingLabelsKey, 'lines', 'w', []),
             ('required_roles', 'lines', 'wd', []),
             ('login_users', 'lines', 'wd', []),
+            (useCustomRedirectionKey, 'boolean', 'w', False),
+            (challengePatternKey, 'string', 'w', _defaultChallengePattern),
+            (challengeReplacementKey, 'string', 'w', _defaultChallengeReplacement),
+            (challengeHeaderEnabledKey, 'boolean', 'w', False),
+            (challengeHeaderNameKey, 'string', 'w', ""),
             (defaultRolesKey, 'lines', 'w', ['Member']))
         # Create any missing properties
         ids = {}
@@ -339,6 +346,10 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> import pprint
         >>> pprint.pprint(handler.getConfig())
         {'auto_update_user_properties': 0,
+         'challenge_header_enabled': False,
+         'challenge_header_name': '',
+         'challenge_pattern': 'http://(.*)',
+         'challenge_replacement': 'https://\\\\1',
          'default_roles': ('Member',),
          'http_authz_tokens': (),
          'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',),
@@ -351,7 +362,9 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
          'http_sharing_tokens': (),
          'http_state': ('HTTP_SHIB_ORGPERSON_STATE',),
          'strip_domain_name_list': (),
-         'strip_domain_names': 1}
+         'strip_domain_names': 1,
+         'use_custom_redirection': False}
+
         """
         return {
             stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
@@ -367,6 +380,11 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
             httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
             httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey),
+            useCustomRedirectionKey : self.getProperty(useCustomRedirectionKey),
+            challengePatternKey: self.getProperty(challengePatternKey),
+            challengeReplacementKey: self.getProperty(challengeReplacementKey),
+            challengeHeaderEnabledKey: self.getProperty(challengeHeaderEnabledKey),
+            challengeHeaderNameKey: self.getProperty(challengeHeaderNameKey)
             defaultRolesKey: self.getProperty(defaultRolesKey)}
 
     security.declarePublic('getSharingConfig')
@@ -472,7 +490,6 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     security.declarePrivate('defaultRoles')
     def defaultRoles(self):
         return self.getProperty('default_roles', ['Member'])
-
 
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
@@ -626,7 +643,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler = handler.__of__(self.portal.acl_users)
+        >>> handler = handler.__of__(layer['portal'].acl_users)
         >>> from pprint import pprint
         >>> roles = [role['id'] for role in handler.getRoles()]
         >>> result = ['Contributor', 'Editor', 'Manager', 'Owner', 'Reader', 'Reviewer']
@@ -644,7 +661,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler = handler.__of__(self.portal.acl_users)
+        >>> handler = handler.__of__(layer['portal'].acl_users)
         >>> handler.getUsers()
         ['', 'test_user_1_']
         """
@@ -661,7 +678,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         >>> from Products.AutoUserMakerPASPlugin.auth import \
                 ApacheAuthPluginHandler
         >>> handler = ApacheAuthPluginHandler('someId')
-        >>> handler = handler.__of__(self.portal.acl_users)
+        >>> handler = handler.__of__(layer['portal'].acl_users)
         >>> groups = handler.getGroups()
         >>> 'Administrators' in groups
         True
@@ -696,9 +713,9 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         if not REQUEST:
             return None
         reqget = REQUEST.form.get
-        strip = safe_int(reqget(stripDomainNamesKey, 1), default=1)
+        strip = safeToInt(reqget(stripDomainNamesKey, 1), default=1)
         strip = max(min(strip, 2), 0) # 0 < x < 2
-        autoupdate = safe_int(reqget(autoUpdateUserPropertiesKey, 0),
+        autoupdate = safeToInt(reqget(autoUpdateUserPropertiesKey, 0),
                               default=0)
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
@@ -726,6 +743,11 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             httpAuthzTokensKey: reqget(httpAuthzTokensKey, ''),
             httpSharingTokensKey: reqget(httpSharingTokensKey, ''),
             httpSharingLabelsKey: reqget(httpSharingLabelsKey, ''),
+            useCustomRedirectionKey: reqget(useCustomRedirectionKey, False),
+            challengeReplacementKey: reqget(challengeReplacementKey, ''),
+            challengePatternKey: reqget(challengePatternKey, ''),
+            challengeHeaderEnabledKey: reqget(challengeHeaderEnabledKey, False),
+            challengeHeaderNameKey: reqget(challengeHeaderNameKey, ''),
             defaultRolesKey: reqget(defaultRolesKey, '')})
         return REQUEST.RESPONSE.redirect('%s/manage_config' %
                                          self.absolute_url())
@@ -787,8 +809,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         # now process delete checkboxes
         deleteIds = REQUEST.form.get('delete_ids', [])
         # make sure deleteIds is a list on integers, in descending order
-        deleteIds = [safe_int(did)
-                     for did in deleteIds if safe_int(did, None) != None]
+        deleteIds = [safeToInt(did)
+                     for did in deleteIds if safeToInt(did, None) != None]
         deleteIds.sort(reverse=True)
         # now shorten without shifting indexes of items still to be removed
         for ii in deleteIds:

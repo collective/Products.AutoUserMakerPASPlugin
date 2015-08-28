@@ -1,18 +1,13 @@
 *~
-*.pyc
-*.pyo
+*.py[cod]
 *.tmp*
 *.mo
-*.egg
-*.EGG
+*.EGG*
 *.egg*
-*.EGG-INFO
 *.kpf
 *.swp
 *.wpr
 .*.cfg
-.installed.cfg
-.mr.developer.cfg
 .hg/
 .bzr/
 .svn/
@@ -27,6 +22,8 @@ fake-eggs/
 parts/
 dist/
 var/
+include/
+lib*
 
 
 

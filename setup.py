@@ -37,7 +37,13 @@ setup(name='Products.AutoUserMakerPASPlugin',
         'Framework :: Zope2',
         'Framework :: Plone',
         'Framework :: Plone :: 4.0',
+        'Framework :: Plone :: 4.1',
+        'Framework :: Plone :: 4.2',
+        'Framework :: Plone :: 4.3',
+        'Framework :: Plone :: 5.0',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
         ],
       keywords='plone authentication shibboleth pas security',
       author='Tom Gross',
@@ -53,5 +59,11 @@ setup(name='Products.AutoUserMakerPASPlugin',
           'setuptools',
           'Products.PlonePAS'
       ],
+      extras_require={
+          'test': [
+              'plone.app.testing',
+              'plone.api'
+          ],
+      },
       entry_points=""" """,
       )

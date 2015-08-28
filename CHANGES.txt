@@ -1,9 +1,17 @@
-1.2 (unreleased)
+2.0 (unreleased)
 ================
+
+- Added challenge header and replacement pattern from WSA
+  [tomgross]
 
 - Plone 5 compatibility
   [tomgross]
 
+- Ported tests to plone.app.testing
+  [tomgross]
+
+- Allow other default roles than Member
+  [Sebastian Gottfried]
 
 1.1 (2014-11-06)
 ================

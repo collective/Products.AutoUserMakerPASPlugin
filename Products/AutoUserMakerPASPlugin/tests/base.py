@@ -1,13 +1,44 @@
-from Products.PloneTestCase import PloneTestCase as ptc
+# -*- coding: utf-8 -*-
 
-ptc.setupPloneSite()
-ptc.installProduct('AutoUserMakerPASPlugin')
+from plone.app.testing.bbb import PloneTestCase
 
-class PluginTestCase(ptc.PloneTestCase):
+from plone.app.testing import PLONE_FIXTURE
+
+from plone.app.testing import FunctionalTesting
+
+from plone.app.testing import PloneSandboxLayer
+from plone.testing import z2
+from plone import api
+
+
+class ProductsAutousermakerpaspluginLayer(PloneSandboxLayer):
+
+    defaultBases = (PLONE_FIXTURE,)
+
+    def setUpZope(self, app, configurationContext):
+        import Products.AutoUserMakerPASPlugin
+        self.loadZCML(package=Products.AutoUserMakerPASPlugin)
+        z2.installProduct(app, 'Products.AutoUserMakerPASPlugin')
+
+    def setUpPloneSite(self, portal):
+        quickinstaller = api.portal.get_tool(name='portal_quickinstaller')
+        quickinstaller.installProduct('Products.AutoUserMakePASPlugin')
+
+
+AUTOUSERMAKERPASPLUGIN_FIXTURE = ProductsAutousermakerpaspluginLayer()
+
+
+AUTOUSERMAKERPASPLUGIN_FUNCTIONAL_TESTING = FunctionalTesting(
+    bases=(AUTOUSERMAKERPASPLUGIN_FIXTURE,),
+    name='ProductsAutousermakerpaspluginLayer:FunctionalTesting'
+)
+
+
+class PluginTestCase(PloneTestCase):
     """ Base class for AutoUserMakerPASPlugin tests """
 
+    layer = AUTOUSERMAKERPASPLUGIN_FUNCTIONAL_TESTING
 
-class PluginFunctionalTestCase(ptc.FunctionalTestCase):
-    """ Base class for AutoUserMakerPASPlugin integration tests """
+PluginFunctionalTestCase = PluginTestCase
 
 # EOF
