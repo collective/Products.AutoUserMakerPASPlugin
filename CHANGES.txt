@@ -10,7 +10,6 @@
 - Ported tests to plone.app.testing
   [tomgross]
 
-
 1.1 (2014-11-06)
 ================
 

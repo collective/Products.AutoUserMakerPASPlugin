@@ -38,6 +38,18 @@ Now let's verify the 'strip these domain names' gets set.
     >>> browser.getControl(name='strip_domain_name_list').value
     'test.org'
 
+See that we can set the default roles for new users. The stock setting should
+be only the Member role.
+
+    >>> browser.getControl(name='default_roles').value
+    ['Member']
+    >>> browser.getControl(name='default_roles').options
+    ['Contributor', 'Editor', 'Manager', 'Member', 'Owner', 'Reader', 'Reviewer', 'Site Administrator']
+    >>> browser.getControl(name='default_roles').value = ['Member', 'Reviewer']
+    >>> browser.getControl('Save').click()
+    >>> browser.getControl(name='default_roles').value
+    ['Member', 'Reviewer']
+
 Let's make sure that a user will see an error message when the mapping headers
 have not been set.
 
