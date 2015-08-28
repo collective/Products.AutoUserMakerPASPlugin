@@ -1,7 +1,14 @@
-1.2 (unreleased)
+2.0 (unreleased)
 ================
 
-- Nothing changed yet.
+- Added challenge header and replacement pattern from WSA
+  [tomgross]
+
+- Plone 5 compatibility
+  [tomgross]
+
+- Ported tests to plone.app.testing
+  [tomgross]
 
 
 1.1 (2014-11-06)
