@@ -44,6 +44,7 @@ httpAuthzTokensKey = 'http_authz_tokens'
 httpSharingTokensKey = 'http_sharing_tokens'
 httpSharingLabelsKey = 'http_sharing_labels'
 usernameKey = 'user_id'
+defaultRolesKey = 'default_roles'
 
 PWCHARS = string.letters + string.digits + string.punctuation
 
@@ -93,6 +94,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
         """See class's docstring and IAuthenticationPlugin."""
 
         mappings = credentials.pop('_getMappings', [])
+        defaultRoles = credentials.pop('_defaultRoles', [])
         userId = credentials.get(usernameKey, None)
 
         pas = self._getPAS()
@@ -142,8 +144,11 @@ class AutoUserMakerPASPlugin(BasePlugin):
                     self._updateUserProperties(user, credentials)
                     break
 
-            # Build a list of roles to assign to the user, always with Member
-            roles = {'Member': True}
+            # Build a list of roles to assign to the user, starting with the
+            # default roles (usually at least Member)
+            roles = {}
+            for role in defaultRoles:
+                roles[role] = True
             groups = []
             if credentials.has_key('filters'):
                 for role in mappings:
@@ -283,7 +288,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
     >>> handler = ExtractionPlugin()
     >>> handler.extractCredentials(request)
-    {'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
+    {'_defaultRoles': ('Member',), 'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
 
     """
     security = ClassSecurityInfo()
@@ -304,7 +309,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             (httpSharingTokensKey, 'lines', 'w', []),
             (httpSharingLabelsKey, 'lines', 'w', []),
             ('required_roles', 'lines', 'wd', []),
-            ('login_users', 'lines', 'wd', []))
+            ('login_users', 'lines', 'wd', []),
+            (defaultRolesKey, 'lines', 'w', ['Member']))
         # Create any missing properties
         ids = {}
         for prop in (config):
@@ -333,6 +339,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> import pprint
         >>> pprint.pprint(handler.getConfig())
         {'auto_update_user_properties': 0,
+         'default_roles': ('Member',),
          'http_authz_tokens': (),
          'http_commonname': ('HTTP_SHIB_PERSON_COMMONNAME',),
          'http_country': ('HTTP_SHIB_ORGPERSON_C',),
@@ -359,7 +366,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             autoUpdateUserPropertiesKey: self.getProperty(autoUpdateUserPropertiesKey),
             httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
             httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
-            httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey)}
+            httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey),
+            defaultRolesKey: self.getProperty(defaultRolesKey)}
 
     security.declarePublic('getSharingConfig')
     def getSharingConfig(self):
@@ -461,6 +469,10 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         """
         return self.getProperty('login_users', [])
 
+    security.declarePrivate('defaultRoles')
+    def defaultRoles(self):
+        return self.getProperty('default_roles', ['Member'])
+
 
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
@@ -551,6 +563,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                 return ploneUser
 
         user['_getMappings'] = self.getMappings()
+        user['_defaultRoles'] = self.defaultRoles()
 
         loginUsers = self.loginUsers()
         requiredRoles = self.requiredRoles()
@@ -621,8 +634,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         True
         """
         portalRoleManager = getToolByName(self, 'portal_role_manager')
-        return [role for role in portalRoleManager.enumerateRoles()
-                if role['id'] != 'Member']
+        return portalRoleManager.enumerateRoles()
 
     security.declareProtected(ManageUsers, 'getUsers')
     def getUsers(self):
@@ -713,7 +725,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             autoUpdateUserPropertiesKey: autoupdate,
             httpAuthzTokensKey: reqget(httpAuthzTokensKey, ''),
             httpSharingTokensKey: reqget(httpSharingTokensKey, ''),
-            httpSharingLabelsKey: reqget(httpSharingLabelsKey, '')})
+            httpSharingLabelsKey: reqget(httpSharingLabelsKey, ''),
+            defaultRolesKey: reqget(defaultRolesKey, '')})
         return REQUEST.RESPONSE.redirect('%s/manage_config' %
                                          self.absolute_url())
 
