@@ -19,8 +19,10 @@ Zope instances, but must have unique DNS names.
 __revision__ = "0.2"
 
 from mod_python import apache
+
 import re
 import urllib
+
 
 # Customize these
 # This allows the matched patterns to pass through (not be sent to zope).

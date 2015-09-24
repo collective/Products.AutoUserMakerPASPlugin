@@ -3,14 +3,13 @@
 
 __revision__ = '0.1'
 
-import unittest
+from plone.testing import layered
+from Products.AutoUserMakerPASPlugin.tests.base import AUTOUSERMAKERPASPLUGIN_FUNCTIONAL_TESTING
+
 import doctest
 import glob
 import os
-
-from plone.testing import layered
-
-from Products.AutoUserMakerPASPlugin.tests.base import AUTOUSERMAKERPASPLUGIN_FUNCTIONAL_TESTING
+import unittest
 
 
 def listDoctests():

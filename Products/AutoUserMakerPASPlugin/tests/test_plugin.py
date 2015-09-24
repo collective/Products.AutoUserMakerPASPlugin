@@ -1,7 +1,8 @@
-from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
-from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
-from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 from plone import api
+from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
+from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
+
 
 class AutoUserMakerPASPluginTests(PluginTestCase):
 

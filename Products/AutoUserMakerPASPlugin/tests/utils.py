@@ -1,6 +1,8 @@
-from Products.PluggableAuthService.interfaces.authservice import IPluggableAuthService
-from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin, IExtractionPlugin
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.PluggableAuthService.interfaces.authservice import IPluggableAuthService
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IExtractionPlugin
+
 
 def _firstIdOfClass(container, class_):
     """Return the id of the first object of class `class_` within `container`.

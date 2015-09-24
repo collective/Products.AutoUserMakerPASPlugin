@@ -1,11 +1,12 @@
 # This lets you install AutoUserMaker through Plone, if you're into that. If you
 # aren't using Plone, it doesn't hurt anything.
 
-from Products.CMFCore.utils import getToolByName
-from Products.PluggableAuthService.interfaces.plugins import (
-    IAuthenticationPlugin, IExtractionPlugin, IChallengePlugin)
-from Products.PluggableAuthService.PluggableAuthService import logger
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.CMFCore.utils import getToolByName
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
+from Products.PluggableAuthService.interfaces.plugins import IExtractionPlugin
+from Products.PluggableAuthService.PluggableAuthService import logger
 
 
 PLUGIN_ID = 'AutoUserMakerPASPlugin'

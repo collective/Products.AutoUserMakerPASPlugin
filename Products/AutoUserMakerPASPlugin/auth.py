@@ -1,12 +1,30 @@
 """Classes to connect apache authentication into Zope/Plone."""
 __revision__ = "0.4"
 
+from AccessControl import ClassSecurityInfo
+from OFS.PropertyManager import PropertyManager
+from persistent.list import PersistentList
+from Products.CMFCore.utils import getToolByName
+from Products.CMFPlone.utils import safeToInt
+from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
+from Products.PluggableAuthService.interfaces.plugins import IExtractionPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRoleAssignerPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
+from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
+from Products.PluggableAuthService.permissions import ManageUsers
+from Products.PluggableAuthService.PluggableAuthService import _SWALLOWABLE_PLUGIN_EXCEPTIONS
+from Products.PluggableAuthService.PluggableAuthService import logger
+from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
+from Products.PluggableAuthService.utils import classImplements
 from random import choice
+from ZODB.POSException import ConflictError
+
 import re
 import string
 
-from persistent.list import PersistentList
-from AccessControl import ClassSecurityInfo
+
 try:
     # Zope >= 2.12
     from App.class_init import InitializeClass
@@ -14,22 +32,8 @@ try:
 except ImportError:
     # Zope < 2.12
     from Globals import InitializeClass
-from OFS.PropertyManager import PropertyManager
-from ZODB.POSException import ConflictError
 
-from Products.CMFCore.utils import getToolByName
-from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.PluggableAuthService.interfaces.plugins import (
-    IAuthenticationPlugin, IExtractionPlugin, IRoleAssignerPlugin,
-    IRolesPlugin, IUserAdderPlugin, IChallengePlugin)
-from Products.PluggableAuthService.permissions import ManageUsers
-from Products.PluggableAuthService.PluggableAuthService import logger
-from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
-from Products.PluggableAuthService.utils import classImplements
 
-from Products.PluggableAuthService.PluggableAuthService import \
-    _SWALLOWABLE_PLUGIN_EXCEPTIONS
-from Products.CMFPlone.utils import safeToInt
 
 stripDomainNamesKey = 'strip_domain_names'
 stripDomainNamesListKey = 'strip_domain_name_list'

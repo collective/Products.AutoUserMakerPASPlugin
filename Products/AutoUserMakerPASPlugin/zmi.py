@@ -2,8 +2,9 @@
 
 __revision__ = '1.2'
 
-from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+
 
 manage_addAutoUserMakerForm = PageTemplateFile('add-AutoUserMakerPASPlugin.zpt', globals())
 
