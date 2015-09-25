@@ -10,11 +10,11 @@ python:
   - 2.6
   - 2.7
 env:
-  - PLONE=4.0
-  - PLONE=4.1
-  - PLONE=4.2
-  - PLONE=4.3
-  - PLONE=5.0
+  - PLONE=4.0 BUILDOUT="bootstrap.py --setuptools-version=0.6c11"
+  - PLONE=4.1 BUILDOUT="bootstrap.py --setuptools-version=0.6c11"
+  - PLONE=4.2 BUILDOUT="bootstrap.py --setuptools-version=0.6c11"
+  - PLONE=4.3 BUILDOUT="bootstrap.py --setuptools-version=0.6c11"
+  - PLONE=5.0 BUILDOUT="bootstrap-buildout.py"
 matrix:
   exclude:
     - python: 2.7
@@ -31,7 +31,7 @@ before_install:
   - mkdir -p buildout-cache/eggs
   - mkdir -p buildout-cache/downloads
 install:
-  - python bootstrap-buildout.py
+  - python $BUILDOUT
   - bin/buildout -t 5 -Nc test-$PLONE.x.cfg
 script:
   - bin/test
