@@ -244,12 +244,14 @@ class AutoUserMakerPASPlugin(BasePlugin):
 
     security.declarePrivate('challenge')
     def challenge(self, request, response):
-        url = self.loginUrl(request.ACTUAL_URL)
-        if url:
-            response.redirect(url, lock=True)
-            return True
-        else:  # Pass off control to the next challenge plugin.
-            return False
+        # Just Start a challenge, if not logged yet
+        if request.getHeader(httpRemoteUserKey, None) == None:
+            url = self.loginUrl(request.ACTUAL_URL)
+            if url:
+                response.redirect(url, lock=True)
+                return True
+        # Pass off control to the next challenge plugin.
+        return False
 
 classImplements(AutoUserMakerPASPlugin, IAuthenticationPlugin, IChallengePlugin)
 
