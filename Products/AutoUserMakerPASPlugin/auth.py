@@ -404,8 +404,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.getSharingConfig()
         {'http_sharing_tokens': (), 'http_sharing_labels': ()}
         """
-        return {httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
-                httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey)}
+        return {httpSharingTokensKey: self.getProperty(httpSharingTokensKey, ()),
+                httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey, ())}
 
     security.declareProtected(ManageUsers, 'getTokens')
     def getTokens(self):
@@ -417,7 +417,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.getTokens()
         ()
         """
-        return self.getProperty(httpAuthzTokensKey)
+        return self.getProperty(httpAuthzTokensKey, ())
 
     security.declareProtected(ManageUsers, 'getMapping')
     def getMapping(self):
@@ -480,7 +480,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.requiredRoles()
         ()
         """
-        return self.getProperty('required_roles', [])
+        return self.getProperty('required_roles', ())
 
     security.declarePrivate('loginUsers')
     def loginUsers(self):
@@ -492,7 +492,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> handler.loginUsers()
         ()
         """
-        return self.getProperty('login_users', [])
+        return self.getProperty('login_users', ())
 
     security.declarePrivate('defaultRoles')
     def defaultRoles(self):
