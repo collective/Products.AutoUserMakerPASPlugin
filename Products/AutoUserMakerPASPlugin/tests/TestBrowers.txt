@@ -23,7 +23,7 @@ is not the user we call the view with `SITE_OWNER_NAME`:
     ...         ring = authenticator._getKeyring(user)
     ...         secret = ring.random()
     ...         return hmac.new(secret, user, sha1).hexdigest()
-    ...     except ImportError:  # no plone.protect auto csrf, so no worries
+    ...     except (ImportError, AttributeError):  # no or old plone.protect auto csrf, so no worries
     ...         return ''
 
 And make sure we can set up our plugin in the PAS instance.
