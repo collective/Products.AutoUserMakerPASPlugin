@@ -7,7 +7,24 @@ Here, we're going to try a few pseudo-browser tests.
 We begin by using the utility method for adding AutoUserMakerPASPlugin to an
 existing acl_users.
 
+    >>> from plone.app.testing import SITE_OWNER_NAME, SITE_OWNER_PASSWORD
+
     >>> from Products.AutoUserMakerPASPlugin.tests import utils
+
+We need a custom token here because the authenticated user `TEST_USER_NAME `
+is not the user we call the view with `SITE_OWNER_NAME`:
+
+    >>> import hmac
+    >>> def getAuth():
+    ...     try:
+    ...         from plone.protect import authenticator
+    ...         from hashlib import sha1
+    ...         user = SITE_OWNER_NAME
+    ...         ring = authenticator._getKeyring(user)
+    ...         secret = ring.random()
+    ...         return hmac.new(secret, user, sha1).hexdigest()
+    ...     except ImportError:  # no plone.protect auto csrf, so no worries
+    ...         return ''
 
 And make sure we can set up our plugin in the PAS instance.
 
@@ -22,7 +39,6 @@ add the login header. By telling the testbrowser not to handle errors, we will
 get more output in the event one happens.
 
     >>> from plone.testing.z2 import Browser
-    >>> from plone.app.testing import SITE_OWNER_NAME, SITE_OWNER_PASSWORD
     >>> browser = Browser(layer['app'])
     >>> browser.addHeader('Authorization', 'Basic %s:%s' % (SITE_OWNER_NAME, SITE_OWNER_PASSWORD))
 
@@ -31,7 +47,9 @@ Configuration Page Testing
 
 Now let's verify the 'strip these domain names' gets set.
 
-    >>> browser.open(apache.absolute_url() + '/manage_config')
+    >>> auth = getAuth()
+    >>> browser.open(apache.absolute_url() + '/manage_config?_authenticator=' + auth)
+
     >>> browser.getControl(name='strip_domain_names').getControl(value='2').selected = True
     >>> browser.getControl(name='strip_domain_name_list').value = 'test.org'
     >>> browser.getControl('Save').click()
