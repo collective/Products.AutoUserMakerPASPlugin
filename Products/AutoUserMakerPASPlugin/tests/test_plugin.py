@@ -24,10 +24,17 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
 
     def test_challenge(self):
         class DummyReq(object):
+            authenticated = False
 
             def __init__(self, url):
                 self.ACTUAL_URL = url
 
+            def getHeader(self, header, default):
+                if self.authenticated:
+                    return "SOME VALUE"
+                else:
+                    return default
+ 
         class DummyResp(object):
             url = ''
 
@@ -37,6 +44,15 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
         request = DummyReq('http://www.example.org/')
         response = DummyResp()
         self.assertFalse(response.url)
+
+
+        # Authenticated already
+        request.authenticated = True
+        self.plugin.challenge(request, response)
+        self.assertFalse(response.url)
+
+        # Not yet atuthenticated
+        request.authenticated = False
         self.plugin.challenge(request, response)
         self.assertEqual(response.url, 'https://www.example.org/')
 
