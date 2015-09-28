@@ -4,7 +4,7 @@
 - Added challenge header and replacement pattern from WSA
   [tomgross]
 
-- Plone 5 compatibility
+- Plone 4.0 - 5.0 compatibility
   [tomgross]
 
 - Ported tests to plone.app.testing
@@ -12,6 +12,7 @@
 
 - Allow other default roles than Member
   [Sebastian Gottfried]
+
 
 1.1 (2014-11-06)
 ================
