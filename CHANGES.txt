@@ -1,4 +1,4 @@
-2.0 (unreleased)
+2.0 (2016-01-14)
 ================
 
 - Added challenge header and replacement pattern from WSA
