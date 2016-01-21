@@ -4,6 +4,8 @@
 - Don't fail, if config properties are set as raw attributes
   [davidjb]
 
+- Update default buildout to Plone 5.0
+  [tomgross]
 
 2.0 (2016-01-14)
 ================
