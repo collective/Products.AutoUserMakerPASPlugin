@@ -7,3 +7,4 @@ AutoUserMakerPASPlugin Readme
        :target: https://travis-ci.org/collective/Products.AutoUserMakerPASPlugin
 
 Automatically generate members on login in Plone.
+
