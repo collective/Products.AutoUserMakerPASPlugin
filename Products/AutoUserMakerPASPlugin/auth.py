@@ -2,9 +2,9 @@
 __revision__ = "0.4"
 
 from AccessControl import ClassSecurityInfo
-from Acquisition import aq_base
 from OFS.PropertyManager import PropertyManager
 from persistent.list import PersistentList
+from plone.app.upgrade.utils import safeEditProperty
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import safeToInt
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
@@ -33,7 +33,6 @@ try:
 except ImportError:
     # Zope < 2.12
     from Globals import InitializeClass
-
 
 
 stripDomainNamesKey = 'strip_domain_names'
@@ -365,13 +364,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             # keep track of property names for quick lookup
             ids.add(prop[0])
             if prop[0] not in self.propertyIds():
-                value = prop[3]
-                if hasattr(aq_base(self), prop[0]):
-                    value = getattr(aq_base(self), prop[0])
-                    delattr(self, prop[0])
-                self.manage_addProperty(id=prop[0],
-                                        type=prop[1],
-                                        value=value)
+                safeEditProperty(self, prop[0], prop[3], prop[1])
                 self._properties[-1]['mode'] = prop[2]
         # Delete any existing properties that aren't in config
         for prop in self._properties:
