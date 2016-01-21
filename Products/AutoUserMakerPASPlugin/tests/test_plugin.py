@@ -1,5 +1,6 @@
 from plone import api
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.AutoUserMakerPASPlugin.auth import httpEmailKey
 from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
 
@@ -64,5 +65,9 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
             self.plugin.loginUrl('https://www.example.org/https/stays'), '')
         self.assertEqual(
             self.plugin.loginUrl('ftp://ftp.example.org/path'), '')
+
+    def test_prop_upgrade(self):
+        setattr(self.plugin, httpEmailKey, 'as attr')
+        self.assertEqual(self.plugin.getConfig()[httpEmailKey], ('as attr',))
 
 # EOF

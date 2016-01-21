@@ -1,7 +1,8 @@
 2.1 (unreleased)
 ================
 
-- Nothing changed yet.
+- Don't fail, if config properties are set as raw attributes
+  [davidjb]
 
 
 2.0 (2016-01-14)
