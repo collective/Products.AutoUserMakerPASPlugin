@@ -2,6 +2,7 @@
 # aren't using Plone, it doesn't hurt anything.
 
 from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.AutoUserMakerPASPlugin.auth import LAST_UPDATE_USER_PROPERTY_KEY
 from Products.CMFCore.utils import getToolByName
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
@@ -84,6 +85,10 @@ def install(portal, reinstall=False):
             acl_users.manage_delProperties([ii])
         except:
             pass
+    memberdata = getToolByName(portal, 'portal_memberdata')
+    if LAST_UPDATE_USER_PROPERTY_KEY not in memberdata.propertyIds():
+        memberdata.manage_addProperty(id=LAST_UPDATE_USER_PROPERTY_KEY, type='float', value=0.0)
+
 
 def uninstall(portal, reinstall=False):
     acl_users = getToolByName(portal, 'acl_users')
@@ -109,3 +114,6 @@ def uninstall(portal, reinstall=False):
             #logger.info("mappings = %s" % repr(mappings))
             acl_users.manage_addProperty(id='aum_mappings', type='lines', value=mappings)
         acl_users.manage_delObjects(ids=[pluginId])  # implicitly deactivates
+    memberdata = getToolByName(portal, 'portal_memberdata')
+    if LAST_UPDATE_USER_PROPERTY_KEY in memberdata.propertyIds():
+        memberdata.manage_delProperties([LAST_UPDATE_USER_PROPERTY_KEY])

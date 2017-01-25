@@ -183,15 +183,25 @@
 
     <h3 i18n:translate="heading_auto_update_user_properties">User Properties Update</h3>
     <p>
+        When enabling this option, make sure this plugin runs only
+        once per login session or set an adequate high update interval,
+        otherwise it will update user properties on every request
+        potentially causing ConflictErrors.
+    </p>
+    <p>
       <input type="checkbox" id="auto_update_user_properties"
              name="auto_update_user_properties" value="1"
              tal:attributes="checked python:'checked' if config['auto_update_user_properties'] else ''"/>
       <label for="auto_update_user_properties" i18n:translate="description_auto_update_user_properties">
         Automatically update user properties with values from request
-        headers.<br/>
-        When enabling this option, make sure this plugin runs only
-        once per login session, otherwise it will update user
-        properties on every request potentially causing ConflictErrors.
+        headers.
+      </label>
+    </p>
+    <p>
+      <input type="text" name="auto_update_user_properties_interval"
+             tal:attributes="value config/auto_update_user_properties_interval">
+      <label for="http_state" i18n:translate="auto_update_user_properties_interval">
+        Update interval (in seconds)
       </label>
     </p>
 
