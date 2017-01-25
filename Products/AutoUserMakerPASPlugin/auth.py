@@ -24,6 +24,7 @@ from ZODB.POSException import ConflictError
 
 import re
 import string
+import time
 
 
 try:
@@ -46,6 +47,7 @@ httpLocalityKey = 'http_locality'
 httpStateKey = 'http_state'
 httpCountryKey = 'http_country'
 autoUpdateUserPropertiesKey = 'auto_update_user_properties'
+autoUpdateUserPropertiesIntervalKey = 'auto_update_user_properties_interval'
 httpAuthzTokensKey = 'http_authz_tokens'
 httpSharingTokensKey = 'http_sharing_tokens'
 httpSharingLabelsKey = 'http_sharing_labels'
@@ -62,6 +64,7 @@ PWCHARS = string.letters + string.digits + string.punctuation
 _defaultChallengePattern = 'http://(.*)'
 _defaultChallengeReplacement = r'https://\1'
 
+LAST_UPDATE_USER_PROPERTY_KEY = 'last_autousermaker_update'
 
 class AutoUserMakerPASPlugin(BasePlugin):
     """ An authentication plugin that creates member objects
@@ -87,6 +90,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                          key in ('fullname', 'description',
                                  'email', 'location')
                          if credentials.get(key) is not None)
+        userProps[LAST_UPDATE_USER_PROPERTY_KEY] = time.time()
         user.setProperties(**userProps)
 
     def _generatePassword(self):
@@ -202,7 +206,8 @@ class AutoUserMakerPASPlugin(BasePlugin):
         else:
             config = self.getConfig()
             if config.get(autoUpdateUserPropertiesKey, 0):
-                self._updateUserProperties(user, credentials)
+                if time.time() > user.getProperty(LAST_UPDATE_USER_PROPERTY_KEY) + config.get(autoUpdateUserPropertiesIntervalKey, 0):
+                    self._updateUserProperties(user, credentials)
 
         #Allow other plugins to handle credentials; eg session or cookie
         pas.updateCredentials(self.REQUEST,
@@ -317,6 +322,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         >>> import pprint
         >>> pprint.pprint(handler.getConfig())
         {'auto_update_user_properties': 0,
+         'auto_update_user_properties_interval': 86400,
          'challenge_header_enabled': False,
          'challenge_header_name': '',
          'challenge_pattern': 'http://(.*)',
@@ -348,6 +354,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
             (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
             (autoUpdateUserPropertiesKey, 'int', 'w', 0),
+            (autoUpdateUserPropertiesIntervalKey, 'int', 'w', 24*60*60),
             (httpAuthzTokensKey, 'lines', 'w', []),
             (httpSharingTokensKey, 'lines', 'w', []),
             (httpSharingLabelsKey, 'lines', 'w', []),
@@ -389,6 +396,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             httpStateKey: self.getProperty(httpStateKey),
             httpCountryKey: self.getProperty(httpCountryKey),
             autoUpdateUserPropertiesKey: self.getProperty(autoUpdateUserPropertiesKey),
+            autoUpdateUserPropertiesIntervalKey: self.getProperty(autoUpdateUserPropertiesIntervalKey),
             httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
             httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
             httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey),
@@ -729,6 +737,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         strip = max(min(strip, 2), 0) # 0 < x < 2
         autoupdate = safeToInt(reqget(autoUpdateUserPropertiesKey, 0),
                               default=0)
+        autoupdate_interval = safeToInt(reqget(autoUpdateUserPropertiesIntervalKey, 0),
+                              default=0)
         # If Shib fields change, then update the authz_mappings property.
         tokens = self.getTokens()
         formTokens = tuple(reqget(httpAuthzTokensKey, '').splitlines())
@@ -752,6 +762,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             httpStateKey: reqget(httpStateKey, ''),
             httpCountryKey: reqget(httpCountryKey, ''),
             autoUpdateUserPropertiesKey: autoupdate,
+            autoUpdateUserPropertiesIntervalKey: autoupdate_interval,
             httpAuthzTokensKey: reqget(httpAuthzTokensKey, ''),
             httpSharingTokensKey: reqget(httpSharingTokensKey, ''),
             httpSharingLabelsKey: reqget(httpSharingLabelsKey, ''),

@@ -158,6 +158,7 @@ Now, let's check the default configuration:
 
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'auto_update_user_properties_interval':86400
     'challenge_header_enabled':False
     'challenge_header_name':
     'challenge_pattern':http://(.*)
@@ -200,6 +201,7 @@ pseudo REQUEST object, then get the results and print in order.
     >>> apache.manage_changeConfig(request)
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'auto_update_user_properties_interval':0
     'challenge_header_enabled':True
     'challenge_header_name':Foo
     'challenge_pattern':http://example.org(.*)
@@ -225,6 +227,7 @@ the above output.
     >>> request = MockForm({'no_such_field': 'junk'})
     >>> inOrder(apache.getConfig())
     'auto_update_user_properties':0
+    'auto_update_user_properties_interval':0
     'challenge_header_enabled':True
     'challenge_header_name':Foo
     'challenge_pattern':http://example.org(.*)

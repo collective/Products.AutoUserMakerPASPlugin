@@ -7,6 +7,9 @@
 - Update default buildout to Plone 5.0
   [tomgross]
 
+- Support periodic user properties updates
+  [sebasgo]
+
 2.0 (2016-01-14)
 ================
 
