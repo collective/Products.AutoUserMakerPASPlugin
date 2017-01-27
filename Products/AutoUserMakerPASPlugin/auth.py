@@ -3,6 +3,7 @@ __revision__ = "0.4"
 
 from AccessControl import ClassSecurityInfo
 from Acquisition import aq_base
+from contextlib import contextmanager
 from OFS.PropertyManager import PropertyManager
 from persistent.list import PersistentList
 from Products.CMFCore.utils import getToolByName
@@ -22,6 +23,7 @@ from Products.PluggableAuthService.utils import classImplements
 from random import choice
 from ZODB.POSException import ConflictError
 
+import itertools
 import re
 import string
 import time
@@ -35,7 +37,14 @@ except ImportError:
     # Zope < 2.12
     from Globals import InitializeClass
 
-
+try:
+    # Plone 5
+    from plone.protect.utils import safeWrite
+except ImportError:
+    # Plone 4 without plone.protect >= 3.0
+    def safeWrite(obj, request):
+        """no-op dummy implementation"""
+        pass
 
 stripDomainNamesKey = 'strip_domain_names'
 stripDomainNamesListKey = 'strip_domain_name_list'
@@ -115,99 +124,101 @@ class AutoUserMakerPASPlugin(BasePlugin):
         user = pas.getUserById(userId)
 
         if user is None:
-            # Make a user with id `userId`, and assign him at least the Member
-            # role, since user doesn't exist.
+            with safe_write(self.REQUEST):
+                # Make a user with id `userId`, and assign him at least the Member
+                # role, since user doesn't exist.
 
-            # Make sure we actually have user adders and role assigners. It
-            # would be ugly to succeed at making the user but be unable to
-            # assign him the role.
-            userAdders = self.plugins.listPlugins(IUserAdderPlugin)
-            if not userAdders:
-                raise NotImplementedError("I wanted to make a new user, but"
-                                          " there are no PAS plugins active"
-                                          " that can make users.")
-            roleAssigners = self.plugins.listPlugins(IRoleAssignerPlugin)
-            if not roleAssigners:
-                raise NotImplementedError("I wanted to make a new user and give"
-                                          " him the Member role, but there are"
-                                          " no PAS plugins active that assign"
-                                          " roles to users.")
+                # Make sure we actually have user adders and role assigners. It
+                # would be ugly to succeed at making the user but be unable to
+                # assign him the role.
+                userAdders = self.plugins.listPlugins(IUserAdderPlugin)
+                if not userAdders:
+                    raise NotImplementedError("I wanted to make a new user, but"
+                                            " there are no PAS plugins active"
+                                            " that can make users.")
+                roleAssigners = self.plugins.listPlugins(IRoleAssignerPlugin)
+                if not roleAssigners:
+                    raise NotImplementedError("I wanted to make a new user and give"
+                                            " him the Member role, but there are"
+                                            " no PAS plugins active that assign"
+                                            " roles to users.")
 
-            # Add the user to the first IUserAdderPlugin that works:
-            user = None
-            for _, curAdder in userAdders:
-                if curAdder.doAddUser(userId, self._generatePassword()):
-                    # Assign a dummy password. It'll never be used;.
-                    user = self._getPAS().getUser(userId)
-                    try:
-                        membershipTool = getToolByName(self,
-                                                       'portal_membership')
-                        if not membershipTool.getHomeFolder(userId):
-                            membershipTool.createMemberArea(userId)
-                    except (ConflictError, KeyboardInterrupt):
-                        raise
-                    except Exception:
-                        pass
-                    self._updateUserProperties(user, credentials)
-                    break
+                # Add the user to the first IUserAdderPlugin that works:
+                user = None
+                for _, curAdder in userAdders:
+                    if curAdder.doAddUser(userId, self._generatePassword()):
+                        # Assign a dummy password. It'll never be used;.
+                        user = self._getPAS().getUser(userId)
+                        try:
+                            membershipTool = getToolByName(self,
+                                                        'portal_membership')
+                            if not membershipTool.getHomeFolder(userId):
+                                membershipTool.createMemberArea(userId)
+                        except (ConflictError, KeyboardInterrupt):
+                            raise
+                        except Exception:
+                            pass
+                        self._updateUserProperties(user, credentials)
+                        break
 
-            # Build a list of roles to assign to the user, starting with the
-            # default roles (usually at least Member)
-            roles = {}
-            for role in defaultRoles:
-                roles[role] = True
-            groups = []
-            if credentials.has_key('filters'):
-                for role in mappings:
-                    # for each source given in authz_mappings
-                    for ii in role['values'].iterkeys():
-                        assignRole = False
-                        # if the authz_mappings pattern is not set, assume ok
-                        if not role['values'][ii]:
-                            assignRole = True
-                        # if the source exists in the environment
-                        elif credentials['filters'].has_key(ii):
-                            try:
-                                # compile the pattern from authz_mappings
-                                oRe = re.compile(role['values'][ii])
-                                # and compare the pattern to the environment
-                                # value
-                                match = oRe.search(credentials['filters'][ii])
-                            except (ConflictError, KeyboardInterrupt):
-                                raise
-                            except Exception:
-                                match = False
-                            if match:
+                # Build a list of roles to assign to the user, starting with the
+                # default roles (usually at least Member)
+                roles = {}
+                for role in defaultRoles:
+                    roles[role] = True
+                groups = []
+                if credentials.has_key('filters'):
+                    for role in mappings:
+                        # for each source given in authz_mappings
+                        for ii in role['values'].iterkeys():
+                            assignRole = False
+                            # if the authz_mappings pattern is not set, assume ok
+                            if not role['values'][ii]:
                                 assignRole = True
-                        if not assignRole:
-                            break
-                    # either there was no pattern or the pattern matched
-                    # for every mapping, so add specified roles or groups.
-                    if assignRole:
-                        for ii in role['roles'].iterkeys():
-                            if role['roles'][ii] == 'on':
-                                roles[ii] = True
-                        for ii in role['groupid']:
-                            groups.append(ii)
+                            # if the source exists in the environment
+                            elif credentials['filters'].has_key(ii):
+                                try:
+                                    # compile the pattern from authz_mappings
+                                    oRe = re.compile(role['values'][ii])
+                                    # and compare the pattern to the environment
+                                    # value
+                                    match = oRe.search(credentials['filters'][ii])
+                                except (ConflictError, KeyboardInterrupt):
+                                    raise
+                                except Exception:
+                                    match = False
+                                if match:
+                                    assignRole = True
+                            if not assignRole:
+                                break
+                        # either there was no pattern or the pattern matched
+                        # for every mapping, so add specified roles or groups.
+                        if assignRole:
+                            for ii in role['roles'].iterkeys():
+                                if role['roles'][ii] == 'on':
+                                    roles[ii] = True
+                            for ii in role['groupid']:
+                                groups.append(ii)
 
-            # Map the given roles to the user using all available
-            # IRoleAssignerPlugins (just like doAddUser does for some reason):
-            for curAssignerId, curAssigner in roleAssigners:
-                for role in roles.iterkeys():
-                    try:
-                        curAssigner.doAssignRoleToPrincipal(user.getId(), role)
-                    except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
-                        logger.warning('RoleAssigner %s error' % curAssignerId,
-                                       exc_info=True)
+                # Map the given roles to the user using all available
+                # IRoleAssignerPlugins (just like doAddUser does for some reason):
+                for curAssignerId, curAssigner in roleAssigners:
+                    for role in roles.iterkeys():
+                        try:
+                            curAssigner.doAssignRoleToPrincipal(user.getId(), role)
+                        except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
+                            logger.warning('RoleAssigner %s error' % curAssignerId,
+                                        exc_info=True)
 
-            source_groups = getToolByName(self, 'source_groups')
-            for ii in groups:
-                source_groups.addPrincipalToGroup(user.getId(), ii)
+                source_groups = getToolByName(self, 'source_groups')
+                for ii in groups:
+                    source_groups.addPrincipalToGroup(user.getId(), ii)
         else:
             config = self.getConfig()
             if config.get(autoUpdateUserPropertiesKey, 0):
                 if time.time() > user.getProperty(LAST_UPDATE_USER_PROPERTY_KEY) + config.get(autoUpdateUserPropertiesIntervalKey, 0):
-                    self._updateUserProperties(user, credentials)
+                    with safe_write(self.REQUEST):
+                        self._updateUserProperties(user, credentials)
 
         #Allow other plugins to handle credentials; eg session or cookie
         pas.updateCredentials(self.REQUEST,
@@ -880,3 +891,29 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                                          self.absolute_url())
 
 InitializeClass(ApacheAuthPluginHandler)
+
+
+@contextmanager
+def safe_write(request):
+    """Disable CSRF protection of plone.protect for a block of code.
+
+    Inside the context manager objects can be written to without any
+    restriction. The context manager collects all touched objects
+    and marks them as safe write."""
+    objects_before = set(_registered_objects(request))
+    yield
+    objects_after = set(_registered_objects(request))
+    for obj in objects_after - objects_before:
+        safeWrite(obj, request)
+
+
+def _registered_objects(request):
+    """Collect all objects part of a pending write transaction."""
+    app = request.PARENTS[-1]
+    return list(itertools.chain.from_iterable(
+        [conn._registered_objects
+         # skip the 'temporary' connection since it stores session objects
+         # which get written all the time
+         for name, conn in app._p_jar.connections.items() if name != 'temporary'
+        ]
+    ))
