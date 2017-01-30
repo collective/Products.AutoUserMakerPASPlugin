@@ -10,6 +10,10 @@
 - Support periodic user properties updates
   [sebasgo]
 
+- Exclude user creation and update from plone.protect's CSRF protection
+  [sebasgo]
+
+
 2.0 (2016-01-14)
 ================
 
