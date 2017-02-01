@@ -20,10 +20,7 @@ able to authenticate, read on.
 Requirements
 ============
 
-* Zope and Plone. Tested with Zope 2.9.7 and Plone 2.5.3, and Zope 2.10.5 and
-  Plone 3.0.6.
-
-* PluggableAuthService (included with Plone 2.5.x and maybe earlier).
+* Plone 4.1 to 5.1 are tested and supported
 
 * I test this with Shibboleth, currently 2.0 service provider.
 
