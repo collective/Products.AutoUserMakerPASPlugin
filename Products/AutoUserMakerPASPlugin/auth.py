@@ -33,14 +33,14 @@ try:
     # Zope >= 2.12
     from App.class_init import InitializeClass
     InitializeClass  # make pyflakes happy ...
-except ImportError:
+except ImportError:  # pragma: no cover
     # Zope < 2.12
     from Globals import InitializeClass
 
 try:
     # Plone 5
     from plone.protect.utils import safeWrite
-except ImportError:
+except ImportError:  # pragma: no cover
     # Plone 4 without plone.protect >= 3.0
     def safeWrite(obj, request):
         """no-op dummy implementation"""
@@ -116,7 +116,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
 
         pas = self._getPAS()
 
-        if not pas:
+        if not pas:   # pragma: no cover
             return None
         elif userId is None:
             return None  # Pass control to the next IAuthenticationPlugin.

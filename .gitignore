@@ -24,6 +24,8 @@ dist/
 var/
 include/
 lib*
+.coverage
+htmlcov
 
 
 
