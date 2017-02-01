@@ -8,3 +8,4 @@ omit =
     eggs/*
     parts/*
     *.txt
+    Products/__init__.py

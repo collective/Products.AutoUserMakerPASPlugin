@@ -31,7 +31,7 @@ matrix:
     - python: 2.6
       env: PLONE=5.1
 before_install:
-  - pip install --upgrade pip setuptools zc.buildout
+  - pip install --upgrade pip setuptools
   - if [ $PLONE == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
 install:
   - python bootstrap$(echo $PLONE | cut -f1 -d.).py -c test-$PLONE.x.cfg
