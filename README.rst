@@ -11,3 +11,8 @@ AutoUserMakerPASPlugin Readme
 
 
 Automatically generate members on login in Plone.
+
+Install
+=======
+
+Install as Plone addon. This creates a acl_user PAS plugin.
