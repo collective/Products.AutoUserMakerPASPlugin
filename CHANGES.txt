@@ -1,4 +1,4 @@
-2.1 (unreleased)
+2.1 (2017-02-01)
 ================
 
 - Don't fail, if config properties are set as raw attributes
