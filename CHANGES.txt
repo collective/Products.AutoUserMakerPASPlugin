@@ -13,6 +13,8 @@
 - Exclude user creation and update from plone.protect's CSRF protection
   [sebasgo]
 
+- Test on Plone 5.1
+  [tomgross]
 
 2.0 (2016-01-14)
 ================
