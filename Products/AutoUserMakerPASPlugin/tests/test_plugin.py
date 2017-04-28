@@ -3,6 +3,9 @@ from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
 from Products.AutoUserMakerPASPlugin.auth import httpEmailKey
 from Products.AutoUserMakerPASPlugin.Extensions.Install import PLUGIN_ID as pluginId
 from Products.AutoUserMakerPASPlugin.tests.base import PluginTestCase
+from zope.interface import Interface
+from Products.PluggableAuthService.interfaces.events import IPrincipalCreatedEvent
+import zope
 
 
 class AutoUserMakerPASPluginTests(PluginTestCase):
@@ -15,6 +18,31 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
         auth = self.plugin.authenticateCredentials
         self.assertFalse(auth({}))
         self.assertEqual(auth({'user_id': 'foobar'}), ('foobar', 'foobar'))
+
+    def test_principal_created_event_on_off(self):
+        class CallCounter:
+            num_calls = 0
+
+            def __call__(self, context, event):
+                self.num_calls += 1
+
+        plugin = self.plugin
+        auth = plugin.authenticateCredentials
+        handler = CallCounter()
+
+        gsm = zope.component.getGlobalSiteManager()
+        gsm.registerHandler(handler, (Interface, IPrincipalCreatedEvent))
+
+        plugin._setProperty('fire_pas_events', ('principal_created',), 'lines')
+        auth({'user_id': 'foobar'})
+        self.assertEqual(1, handler.num_calls)
+
+        auth({})
+        self.assertEqual(1, handler.num_calls)
+
+        plugin._updateProperty('fire_pas_events', ())
+        auth({'user_id': 'foobar'})
+        self.assertEqual(1, handler.num_calls)
 
     def test_authentication_session(self):
         """ Test that authenticating will create a session, if configured."""

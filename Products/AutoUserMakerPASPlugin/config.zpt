@@ -252,6 +252,14 @@
                 tal:content="python:'\n'.join(config['http_sharing_labels'])">
       </textarea>
     </p>
+
+    <h3>Fire PAS Events</h3>
+    <p>
+      <input type="checkbox" name="fire_pas_events" id="fire_principal_created" value="principal_created"
+             tal:attributes="checked python:'fire_principal_created' in config['fire_pas_events'] and 'checked' or None">
+      <label for="fire_principal_created">Principal Created Event</label>
+    </p>
+
       </fieldset>
 
     <input type="submit" i18n:domain="plone"
