@@ -51,6 +51,23 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
             self.plugin.authenticateCredentials({'user_id': 'foobar'})
             self.assertTrue('__ac' in self.plugin.REQUEST.RESPONSE.cookies)
 
+    def test_set_user_properties(self):
+        auth = self.plugin.authenticateCredentials
+        self.assertEqual(auth({'user_id': 'foobar', 'level_of_assurance': 'Super!'}), ('foobar', 'foobar'))
+        user = api.user.get('foobar')
+        self.assertEquals(user.getProperty('level_of_assurance'), 'Super!')
+
+    def test_loa_extraction(self):
+        extract = self.plugin.extractCredentials
+
+        class MockRequest:
+            def __init__(self, environ):
+                self.environ = environ
+
+        request = MockRequest({'HTTP_X_REMOTE_USER': 'foobar', 'HTTP_LOA': 'TEST_ASSURANCE'})
+        user = extract(request)
+        self.assertEquals(user['level_of_assurance'], 'TEST_ASSURANCE')
+
     def test_challenge(self):
         class DummyReq(object):
             authenticated = False

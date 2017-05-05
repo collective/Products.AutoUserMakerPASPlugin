@@ -74,6 +74,7 @@ challengeHeaderEnabledKey = 'challenge_header_enabled'
 challengeHeaderNameKey = 'challenge_header_name'
 defaultRolesKey = 'default_roles'
 firePASEventsKey = 'fire_pas_events'
+levelOfAssuranceKey = 'level_of_assurance'
 
 PWCHARS = string.ascii_letters + string.digits + string.punctuation
 
@@ -105,7 +106,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
         """
         userProps = dict((key, credentials[key]) for
                          key in ('fullname', 'description',
-                                 'email', 'location')
+                                 'email', 'location', 'level_of_assurance')
                          if credentials.get(key) is not None)
         userProps[LAST_UPDATE_USER_PROPERTY_KEY] = time.time()
         user.setProperties(**userProps)
@@ -324,7 +325,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
     >>> handler = ExtractionPlugin()
     >>> sorted(handler.extractCredentials(request).items())
-    [('_defaultRoles', ('Member',)), ('_getMappings', []), ('description', None), ('email', None), ('filters', {}), ('fullname', None), ('location', ''), ('user_id', 'foobar')]
+    [('_defaultRoles', ('Member',)), ('_getMappings', []), ('description', None), ('email', None), ('filters', {}), ('fullname', None), ('level_of_assurance', None), ('location', ''), ('user_id', 'foobar')]
 
     """
     security = ClassSecurityInfo()
@@ -361,6 +362,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
          'http_sharing_labels': (),
          'http_sharing_tokens': (),
          'http_state': ('HTTP_SHIB_ORGPERSON_STATE',),
+         'level_of_assurance': ('HTTP_LOA',),
          'strip_domain_name_list': (),
          'strip_domain_names': 1,
          'use_custom_redirection': False}
@@ -393,7 +395,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             (challengeHeaderEnabledKey, 'boolean', 'w', False),
             (challengeHeaderNameKey, 'string', 'w', ""),
             (firePASEventsKey, lines_type, 'w', []),
-            (defaultRolesKey, lines_type, 'w', ['Member']))
+            (defaultRolesKey, lines_type, 'w', ['Member']),
+            (levelOfAssuranceKey, lines_type, 'w', ['HTTP_LOA']))
         # Create any missing properties
         ids = set()
         for prop in config:
@@ -411,7 +414,7 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
         # Delete any existing properties that aren't in config
         for prop in self._properties:
             if prop['id'] not in ids and prop['id'] != 'prefix':
-                self.manage_delProperties(prop['id'])
+                self.manage_delProperties((prop['id'],))
 
         return {
             stripDomainNamesKey: self.safe_prop(stripDomainNamesKey),
@@ -434,7 +437,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             challengeHeaderEnabledKey: self.safe_prop(challengeHeaderEnabledKey),
             challengeHeaderNameKey: self.safe_prop(challengeHeaderNameKey),
             firePASEventsKey: self.safe_prop(firePASEventsKey),
-            defaultRolesKey: self.safe_prop(defaultRolesKey)}
+            defaultRolesKey: self.safe_prop(defaultRolesKey),
+            levelOfAssuranceKey: self.safe_prop(levelOfAssuranceKey)}
 
     def safe_prop(self, key):
         val = self.getProperty(key)
@@ -573,6 +577,13 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                     break
         if not user[usernameKey] or user[usernameKey] == '(null)':
             return None
+
+        # Get level of assurance (use first occurrence of one of the configured tokens)
+        for label, key in (('level_of_assurance', levelOfAssuranceKey),):
+            for jj in config[key]:
+                user[label] = request.environ.get(jj, None)
+                if user[label]:
+                    break
 
         # clean up the user id, if told to do so
         if config[stripDomainNamesKey] and user[usernameKey].find('@') > 0:
@@ -809,7 +820,8 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                                       challengeHeaderEnabledKey: reqget(challengeHeaderEnabledKey, False),
                                       challengeHeaderNameKey: reqget(challengeHeaderNameKey, ''),
                                       firePASEventsKey: reqget(firePASEventsKey, ''),
-                                      defaultRolesKey: reqget(defaultRolesKey, '')})
+                                      defaultRolesKey: reqget(defaultRolesKey, ''),
+                                      levelOfAssuranceKey: reqget(levelOfAssuranceKey, '')})
         return REQUEST.RESPONSE.redirect('%s/manage_config' %
                                          self.absolute_url())
 
