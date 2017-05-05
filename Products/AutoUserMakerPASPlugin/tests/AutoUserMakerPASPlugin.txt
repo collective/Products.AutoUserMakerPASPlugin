@@ -129,7 +129,8 @@ info in the Plone user it creates (which above is just a user id).
     ...                        'HTTP_SHIB_INETORGPERSON_MAIL': 'foo@test.org',
     ...                        'HTTP_SHIB_ORGPERSON_LOCALITY': 'Princeton',
     ...                        'HTTP_SHIB_ORGPERSON_STATE': 'NJ',
-    ...                        'HTTP_SHIB_ORGPERSON_C': 'US'})
+    ...                        'HTTP_SHIB_ORGPERSON_C': 'US',
+    ...                        'HTTP_LOA': 'Super!'})
     >>> inOrder(apache.extractCredentials(request))
     '_defaultRoles':('Member',)
     '_getMappings':[]
@@ -137,6 +138,7 @@ info in the Plone user it creates (which above is just a user id).
     'email':foo@test.org
     'filters':{}
     'fullname':Test Foo
+    'level_of_assurance':Super!
     'location':Princeton, NJ, US
     'user_id':foo
 
@@ -174,6 +176,7 @@ Now, let's check the default configuration:
     'http_sharing_labels':()
     'http_sharing_tokens':()
     'http_state':('HTTP_SHIB_ORGPERSON_STATE',)
+    'level_of_assurance':('HTTP_LOA',)
     'strip_domain_name_list':()
     'strip_domain_names':1
     'use_custom_redirection':False
@@ -197,6 +200,7 @@ pseudo REQUEST object, then get the results and print in order.
     ...                     "http_authz_tokens": 'HTTP_TEST_USER',
     ...                     "http_sharing_tokens": 'HTTP_TEST_USER',
     ...                     "http_sharing_labels": 'TEST_TITLE',
+    ...                     "level_of_assurance": 'TEST_ASSURANCE',
     ...                     "default_roles": ['Test Role']})
     >>> apache.manage_changeConfig(request)
     >>> inOrder(apache.getConfig())
@@ -217,6 +221,7 @@ pseudo REQUEST object, then get the results and print in order.
     'http_sharing_labels':('TEST_TITLE',)
     'http_sharing_tokens':('HTTP_TEST_USER',)
     'http_state':('HTTP_TEST_STATE',)
+    'level_of_assurance':('TEST_ASSURANCE',)
     'strip_domain_name_list':('test.org',)
     'strip_domain_names':0
     'use_custom_redirection':False
@@ -243,6 +248,7 @@ the above output.
     'http_sharing_labels':('TEST_TITLE',)
     'http_sharing_tokens':('HTTP_TEST_USER',)
     'http_state':('HTTP_TEST_STATE',)
+    'level_of_assurance':('TEST_ASSURANCE',)
     'strip_domain_name_list':('test.org',)
     'strip_domain_names':0
     'use_custom_redirection':False
