@@ -1,7 +1,7 @@
 # This lets you install AutoUserMaker through Plone, if you're into that. If you
 # aren't using Plone, it doesn't hurt anything.
 
-from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler
+from Products.AutoUserMakerPASPlugin.auth import ApacheAuthPluginHandler, levelOfAssuranceKey
 from Products.AutoUserMakerPASPlugin.auth import LAST_UPDATE_USER_PROPERTY_KEY
 from Products.CMFCore.utils import getToolByName
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
@@ -88,6 +88,8 @@ def install(portal, reinstall=False):
     memberdata = getToolByName(portal, 'portal_memberdata')
     if LAST_UPDATE_USER_PROPERTY_KEY not in memberdata.propertyIds():
         memberdata.manage_addProperty(id=LAST_UPDATE_USER_PROPERTY_KEY, type='float', value=0.0)
+    if levelOfAssuranceKey not in memberdata.propertyIds():
+        memberdata.manage_addProperty(id=levelOfAssuranceKey, type='string', value='')
 
 
 def uninstall(portal, reinstall=False):
@@ -117,3 +119,5 @@ def uninstall(portal, reinstall=False):
     memberdata = getToolByName(portal, 'portal_memberdata')
     if LAST_UPDATE_USER_PROPERTY_KEY in memberdata.propertyIds():
         memberdata.manage_delProperties([LAST_UPDATE_USER_PROPERTY_KEY])
+    if levelOfAssuranceKey in memberdata.propertyIds():
+        memberdata.manage_delProperties([levelOfAssuranceKey])

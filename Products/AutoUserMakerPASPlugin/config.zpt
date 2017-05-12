@@ -180,6 +180,14 @@
         User's country (HTTP_SHIB_ORGPERSON_C)
       </label>
     </p>
+    <p>
+      <textarea name="level_of_assurance" rows="2" cols="40"
+             tal:content="python:'\n'.join(config['level_of_assurance'])">LEVEL_OF_ASSURANCE
+      </textarea>
+      <label for="http_country" i18n:translate="description_level_of_assurance">
+        User's level of assurance (LEVEL_OF_ASSURANCE)
+      </label>
+    </p>
 
     <h3 i18n:translate="heading_auto_update_user_properties">User Properties Update</h3>
     <p>
