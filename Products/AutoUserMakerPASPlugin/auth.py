@@ -8,6 +8,7 @@ from OFS.PropertyManager import PropertyManager
 from persistent.list import PersistentList
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import safeToInt
+from Products.CMFPlone.utils import safe_text
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
@@ -27,6 +28,9 @@ import itertools
 import re
 import string
 import time
+import six
+from six.moves import range
+from six.moves import zip
 
 
 try:
@@ -68,12 +72,13 @@ challengeHeaderEnabledKey = 'challenge_header_enabled'
 challengeHeaderNameKey = 'challenge_header_name'
 defaultRolesKey = 'default_roles'
 
-PWCHARS = string.letters + string.digits + string.punctuation
+PWCHARS = string.ascii_letters + string.digits + string.punctuation
 
 _defaultChallengePattern = 'http://(.*)'
 _defaultChallengeReplacement = r'https://\1'
 
 LAST_UPDATE_USER_PROPERTY_KEY = 'last_autousermaker_update'
+
 
 class AutoUserMakerPASPlugin(BasePlugin):
     """ An authentication plugin that creates member objects
@@ -167,16 +172,16 @@ class AutoUserMakerPASPlugin(BasePlugin):
                 for role in defaultRoles:
                     roles[role] = True
                 groups = []
-                if credentials.has_key('filters'):
+                if 'filters' in credentials:
                     for role in mappings:
                         # for each source given in authz_mappings
-                        for ii in role['values'].iterkeys():
+                        for ii in six.iterkeys(role['values']):
                             assignRole = False
                             # if the authz_mappings pattern is not set, assume ok
                             if not role['values'][ii]:
                                 assignRole = True
                             # if the source exists in the environment
-                            elif credentials['filters'].has_key(ii):
+                            elif ii in credentials['filters']:
                                 try:
                                     # compile the pattern from authz_mappings
                                     oRe = re.compile(role['values'][ii])
@@ -194,7 +199,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                         # either there was no pattern or the pattern matched
                         # for every mapping, so add specified roles or groups.
                         if assignRole:
-                            for ii in role['roles'].iterkeys():
+                            for ii in six.iterkeys(role['roles']):
                                 if role['roles'][ii] == 'on':
                                     roles[ii] = True
                             for ii in role['groupid']:
@@ -203,7 +208,7 @@ class AutoUserMakerPASPlugin(BasePlugin):
                 # Map the given roles to the user using all available
                 # IRoleAssignerPlugins (just like doAddUser does for some reason):
                 for curAssignerId, curAssigner in roleAssigners:
-                    for role in roles.iterkeys():
+                    for role in six.iterkeys(roles):
                         try:
                             curAssigner.doAssignRoleToPrincipal(user.getId(), role)
                         except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
@@ -397,26 +402,36 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
                 self.manage_delProperties(prop['id'])
 
         return {
-            stripDomainNamesKey: self.getProperty(stripDomainNamesKey),
-            stripDomainNamesListKey: self.getProperty(stripDomainNamesListKey),
-            httpRemoteUserKey: self.getProperty(httpRemoteUserKey),
-            httpCommonnameKey: self.getProperty(httpCommonnameKey),
-            httpDescriptionKey: self.getProperty(httpDescriptionKey),
-            httpEmailKey: self.getProperty(httpEmailKey),
-            httpLocalityKey: self.getProperty(httpLocalityKey),
-            httpStateKey: self.getProperty(httpStateKey),
-            httpCountryKey: self.getProperty(httpCountryKey),
-            autoUpdateUserPropertiesKey: self.getProperty(autoUpdateUserPropertiesKey),
-            autoUpdateUserPropertiesIntervalKey: self.getProperty(autoUpdateUserPropertiesIntervalKey),
-            httpAuthzTokensKey: self.getProperty(httpAuthzTokensKey),
-            httpSharingTokensKey: self.getProperty(httpSharingTokensKey),
-            httpSharingLabelsKey: self.getProperty(httpSharingLabelsKey),
-            useCustomRedirectionKey : self.getProperty(useCustomRedirectionKey),
-            challengePatternKey: self.getProperty(challengePatternKey),
-            challengeReplacementKey: self.getProperty(challengeReplacementKey),
-            challengeHeaderEnabledKey: self.getProperty(challengeHeaderEnabledKey),
-            challengeHeaderNameKey: self.getProperty(challengeHeaderNameKey),
-            defaultRolesKey: self.getProperty(defaultRolesKey)}
+            stripDomainNamesKey: self.safe_prop(stripDomainNamesKey),
+            stripDomainNamesListKey: self.safe_prop(stripDomainNamesListKey),
+            httpRemoteUserKey: self.safe_prop(httpRemoteUserKey),
+            httpCommonnameKey: self.safe_prop(httpCommonnameKey),
+            httpDescriptionKey: self.safe_prop(httpDescriptionKey),
+            httpEmailKey: self.safe_prop(httpEmailKey),
+            httpLocalityKey: self.safe_prop(httpLocalityKey),
+            httpStateKey: self.safe_prop(httpStateKey),
+            httpCountryKey: self.safe_prop(httpCountryKey),
+            autoUpdateUserPropertiesKey: self.safe_prop(autoUpdateUserPropertiesKey),
+            autoUpdateUserPropertiesIntervalKey: self.safe_prop(autoUpdateUserPropertiesIntervalKey),
+            httpAuthzTokensKey: self.safe_prop(httpAuthzTokensKey),
+            httpSharingTokensKey: self.safe_prop(httpSharingTokensKey),
+            httpSharingLabelsKey: self.safe_prop(httpSharingLabelsKey),
+            useCustomRedirectionKey: self.safe_prop(useCustomRedirectionKey),
+            challengePatternKey: self.safe_prop(challengePatternKey),
+            challengeReplacementKey: self.safe_prop(challengeReplacementKey),
+            challengeHeaderEnabledKey: self.safe_prop(challengeHeaderEnabledKey),
+            challengeHeaderNameKey: self.safe_prop(challengeHeaderNameKey),
+            defaultRolesKey: self.safe_prop(defaultRolesKey)}
+
+    def safe_prop(self, key):
+        val = self.getProperty(key)
+        if six.PY2:
+            return val
+        if isinstance(val, bytes):
+            val = safe_text(val)
+        if isinstance(val, tuple):
+            val = tuple(safe_text(i) for i in val)
+        return val
 
     security.declarePublic('getSharingConfig')
     def getSharingConfig(self):
@@ -590,13 +605,13 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
             except KeyError:
                 continue
             # for each source given in authz_mappings
-            for ii in role['values'].iterkeys():
+            for ii in six.iterkeys(role['values']):
                 assignRole = False
                 # if the authz_mappings pattern is not set, assume ok
                 if not role['values'][ii]:
                     assignRole = True
                 # if the source exists in the environment
-                elif user['filters'].has_key(ii):
+                elif ii in user['filters']:
                     # compile the pattern from authz_mappings
                     oRe = re.compile(role['values'][ii])
                     # and compare the pattern to the environment value
@@ -757,7 +772,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
             for ii in self.getMappings():
                 saveVals = {}
                 for jj in formTokens:
-                    if ii['values'].has_key(jj):
+                    if jj in ii['values']:
                         saveVals[jj] = ii['values'][jj]
                     else:
                         saveVals[jj] = ''
@@ -808,7 +823,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
         # as the amount of input. This sort of handles somebody adding or
         # deleting a mapping from underneath somebody else.
         sets = []
-        for ii in REQUEST.form.iterkeys():
+        for ii in six.iterkeys(REQUEST.form):
             match = self.rKey.match(ii)
             if not match:
                 continue
@@ -835,7 +850,7 @@ class ApacheAuthPluginHandler(AutoUserMakerPASPlugin, ExtractionPlugin):
                 for ii in REQUEST.form[ii]:
                     if ii in groups:
                         sets[index]['groupid'].append(ii)
-            elif sets[index]['roles'].has_key(match.group(1)):
+            elif match.group(1) in sets[index]['roles']:
                 sets[index]['roles'][match.group(1)] = REQUEST.form[ii]
         if len(sets) != len(authz):
             return REQUEST.RESPONSE.redirect('%s/manage_authz' %
