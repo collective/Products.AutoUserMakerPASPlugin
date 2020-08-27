@@ -33,6 +33,7 @@ def addAutoUserMakerPASPlugin(context):
 
     plugins = acl_users.plugins
     for interface in [IAuthenticationPlugin, IExtractionPlugin]:
-        plugins.activatePlugin(interface, pluginId)
+        if pluginId not in plugins.listPluginIds(interface):
+            plugins.activatePlugin(interface, pluginId)
 
     return pas[pluginId]

@@ -9,7 +9,6 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
 
     def afterSetUp(self):
         acl_users = api.portal.get_tool(name='acl_users')
-        acl_users._setObject(pluginId, ApacheAuthPluginHandler(pluginId))
         self.plugin = acl_users[pluginId]
 
     def test_authentication(self):
@@ -19,6 +18,7 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
 
     def test_authentication_session(self):
         """ Test that authenticating will create a session, if configured."""
+        self.logout()
         if 'session' in self.portal.acl_users:
             self.plugin.authenticateCredentials({'user_id': 'foobar'})
             self.assertTrue('__ac' in self.plugin.REQUEST.RESPONSE.cookies)
@@ -35,7 +35,7 @@ class AutoUserMakerPASPluginTests(PluginTestCase):
                     return "SOME VALUE"
                 else:
                     return default
- 
+
         class DummyResp(object):
             url = ''
 

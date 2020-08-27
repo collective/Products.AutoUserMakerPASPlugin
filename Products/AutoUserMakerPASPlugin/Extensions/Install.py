@@ -29,6 +29,7 @@ def install(portal, reinstall=False):
     pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
     if not pluginId:
         acl_users._setObject(PLUGIN_ID, ApacheAuthPluginHandler(PLUGIN_ID))
+        pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
 
     # Activate it:
     plugins = acl_users.plugins

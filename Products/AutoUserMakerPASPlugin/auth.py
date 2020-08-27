@@ -8,7 +8,7 @@ from OFS.PropertyManager import PropertyManager
 from persistent.list import PersistentList
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import safeToInt
-from Products.CMFPlone.utils import safe_text
+from Products.CMFPlone.utils import safe_nativestring
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
@@ -317,8 +317,8 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
     it out.
     >>> from Products.AutoUserMakerPASPlugin.auth import ExtractionPlugin
     >>> handler = ExtractionPlugin()
-    >>> handler.extractCredentials(request)
-    {'_defaultRoles': ('Member',), 'user_id': 'foobar', 'description': None, 'location': '', 'filters': {}, 'fullname': None, '_getMappings': [], 'email': None}
+    >>> sorted(handler.extractCredentials(request).items())
+    [('_defaultRoles', ('Member',)), ('_getMappings', []), ('description', None), ('email', None), ('filters', {}), ('fullname', None), ('location', ''), ('user_id', 'foobar')]
 
     """
     security = ClassSecurityInfo()
@@ -359,29 +359,33 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
          'use_custom_redirection': False}
 
         """
+        lines_type = 'ulines'
+        if six.PY2:
+            lines_type = 'lines'
+
         config = (
             (stripDomainNamesKey, 'int', 'w', 1),
-            (stripDomainNamesListKey, 'lines', 'w', []),
-            (httpRemoteUserKey, 'lines', 'w', ['HTTP_X_REMOTE_USER',]),
-            (httpCommonnameKey, 'lines', 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
-            (httpDescriptionKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
-            (httpEmailKey, 'lines', 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
-            (httpLocalityKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
-            (httpStateKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
-            (httpCountryKey, 'lines', 'w', ['HTTP_SHIB_ORGPERSON_C',]),
+            (stripDomainNamesListKey, lines_type, 'w', []),
+            (httpRemoteUserKey, lines_type, 'w', ['HTTP_X_REMOTE_USER',]),
+            (httpCommonnameKey, lines_type, 'w', ['HTTP_SHIB_PERSON_COMMONNAME',]),
+            (httpDescriptionKey, lines_type, 'w', ['HTTP_SHIB_ORGPERSON_TITLE',]),
+            (httpEmailKey, lines_type, 'w', ['HTTP_SHIB_INETORGPERSON_MAIL',]),
+            (httpLocalityKey, lines_type, 'w', ['HTTP_SHIB_ORGPERSON_LOCALITY',]),
+            (httpStateKey, lines_type, 'w', ['HTTP_SHIB_ORGPERSON_STATE',]),
+            (httpCountryKey, lines_type, 'w', ['HTTP_SHIB_ORGPERSON_C',]),
             (autoUpdateUserPropertiesKey, 'int', 'w', 0),
             (autoUpdateUserPropertiesIntervalKey, 'int', 'w', 24*60*60),
-            (httpAuthzTokensKey, 'lines', 'w', []),
-            (httpSharingTokensKey, 'lines', 'w', []),
-            (httpSharingLabelsKey, 'lines', 'w', []),
-            ('required_roles', 'lines', 'wd', []),
-            ('login_users', 'lines', 'wd', []),
+            (httpAuthzTokensKey, lines_type, 'w', []),
+            (httpSharingTokensKey, lines_type, 'w', []),
+            (httpSharingLabelsKey, lines_type, 'w', []),
+            ('required_roles', lines_type, 'wd', []),
+            ('login_users', lines_type, 'wd', []),
             (useCustomRedirectionKey, 'boolean', 'w', False),
             (challengePatternKey, 'string', 'w', _defaultChallengePattern),
             (challengeReplacementKey, 'string', 'w', _defaultChallengeReplacement),
             (challengeHeaderEnabledKey, 'boolean', 'w', False),
             (challengeHeaderNameKey, 'string', 'w', ""),
-            (defaultRolesKey, 'lines', 'w', ['Member']))
+            (defaultRolesKey, lines_type, 'w', ['Member']))
         # Create any missing properties
         ids = set()
         for prop in config:
@@ -425,12 +429,10 @@ class ExtractionPlugin(BasePlugin, PropertyManager):
 
     def safe_prop(self, key):
         val = self.getProperty(key)
-        if six.PY2:
-            return val
-        if isinstance(val, bytes):
-            val = safe_text(val)
+        if isinstance(val, (six.text_type, six.binary_type)):
+            val = safe_nativestring(val)
         if isinstance(val, tuple):
-            val = tuple(safe_text(i) for i in val)
+            val = tuple(safe_nativestring(i) for i in val)
         return val
 
     security.declarePublic('getSharingConfig')

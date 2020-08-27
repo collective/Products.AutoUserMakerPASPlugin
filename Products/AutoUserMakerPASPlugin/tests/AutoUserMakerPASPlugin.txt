@@ -115,9 +115,7 @@ If we add the user ID to ``login_users``, he can log in again.
 
 Handy output function:
     >>> def inOrder(config):
-    ...     keys = config.keys()
-    ...     keys.sort()
-    ...     for ii in keys: print "'%s':%s" % (ii, str(config[ii]))
+    ...     for ii in sorted(config.keys()): print("'%s':%s" % (ii, str(config[ii])))
 
 Now let's fudge an apache header with a full set of information comming from
 Shibboleth. When this is provided, AutoUserMakerPASPlugin will populate more

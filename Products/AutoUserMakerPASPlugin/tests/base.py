@@ -14,12 +14,11 @@ class ProductsAutousermakerpaspluginLayer(PloneSandboxLayer):
 
     def setUpZope(self, app, configurationContext):
         import Products.AutoUserMakerPASPlugin
-        self.loadZCML(package=Products.AutoUserMakerPASPlugin)
-        z2.installProduct(app, 'Products.AutoUserMakerPASPlugin')
+        # self.loadZCML(package=Products.AutoUserMakerPASPlugin)
 
     def setUpPloneSite(self, portal):
         quickinstaller = api.portal.get_tool(name='portal_quickinstaller')
-        quickinstaller.installProduct('Products.AutoUserMakePASPlugin')
+        quickinstaller.installProduct('Products.AutoUserMakerPASPlugin')
 
 
 AUTOUSERMAKERPASPLUGIN_FIXTURE = ProductsAutousermakerpaspluginLayer()
