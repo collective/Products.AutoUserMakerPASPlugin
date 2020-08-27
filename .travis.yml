@@ -14,14 +14,7 @@ python:
   - 3.7
   - 3.8
 env:
-  - PLONE=5.1
   - PLONE=5.2
-matrix:
-  exclude:
-    - python: 3.7
-      env: PLONE=5.1
-    - python: 3.8
-      env: PLONE=5.1
 
 before_install:
   - pip install --upgrade pip setuptools==42.0.2
