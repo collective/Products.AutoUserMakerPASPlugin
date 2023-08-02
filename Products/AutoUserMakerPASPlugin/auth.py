@@ -35,7 +35,7 @@ from six.moves import zip
 
 try:
     # Zope >= 2.12
-    from App.class_init import InitializeClass
+    from AccessControl.class_init import InitializeClass
     InitializeClass  # make pyflakes happy ...
 except ImportError:  # pragma: no cover
     # Zope < 2.12
