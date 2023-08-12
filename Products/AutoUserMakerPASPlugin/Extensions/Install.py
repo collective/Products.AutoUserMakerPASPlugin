@@ -29,6 +29,7 @@ def install(portal, reinstall=False):
     pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
     if not pluginId:
         acl_users._setObject(PLUGIN_ID, ApacheAuthPluginHandler(PLUGIN_ID))
+        pluginId = _firstIdOfClass(acl_users, ApacheAuthPluginHandler)
 
     # Activate it:
     plugins = acl_users.plugins
@@ -49,18 +50,18 @@ def install(portal, reinstall=False):
             prop = "\n".join(acl_users.getProperty('aum_config'))
             #logger.info("aum_config = %s" % repr(prop))
             config = pickle.loads(prop)
-        except Exception, err:
+        except Exception as err:
             logger.info("error getting config: %s of %r" % (str(err), repr(err)))
         try:
             prop = "\n".join(acl_users.getProperty('aum_mappings'))
             #logger.info("aum_mappings = %s" % repr(prop))
             mappings = pickle.loads(prop)
-        except Exception, err:
+        except Exception as err:
             logger.info("error getting mappings: %s of %r" % (str(err), repr(err)))
         # Now restore the configuration
         #logger.info("config = %s" % repr(config))
         for prop in plugin.propertyMap():
-            if config.has_key(prop['id']):
+            if prop['id'] in config:
                 try:
                     val = config[prop['id']]['value']
                     if prop['type'] == 'lines':
@@ -75,7 +76,7 @@ def install(portal, reinstall=False):
                             pass
                     else:
                         plugin.manage_changeProperties({prop['id']: str(val)})
-                except Exception, err:
+                except Exception as err:
                     logger.info("error in install: %s" % str(err))
         # Now restore the mappings.
         #logger.info("settings mappings to %s" % str(mappings))

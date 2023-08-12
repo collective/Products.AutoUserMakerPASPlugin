@@ -21,7 +21,7 @@ __revision__ = "0.2"
 from mod_python import apache
 
 import re
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 
 # Customize these
@@ -38,12 +38,12 @@ def fixuphandler(req):
         return apache.DECLINED
     # Make the REMOTE_USER value from Shibboleth available to zope.
     req.add_common_vars()
-    if req.subprocess_env.has_key('REMOTE_USER'):
+    if 'REMOTE_USER' in req.subprocess_env:
         req.headers_in['X_REMOTE_USER'] = req.subprocess_env['REMOTE_USER']
     # Build the reverse proxy request URL, and tell apache to use it.
     sHost = req.headers_in['Host']
     req.uri = "http://%s/VirtualHostBase/https/%s:443/%s/VirtualHostRoot%s" % \
-        (_dHosts[sHost], sHost, _dPaths[sHost], urllib.quote(req.uri))
+        (_dHosts[sHost], sHost, _dPaths[sHost], six.moves.urllib.parse.quote(req.uri))
     req.proxyreq = apache.PROXYREQ_REVERSE
     req.filename = "proxy:" + req.uri
     req.handler = 'proxy-server'

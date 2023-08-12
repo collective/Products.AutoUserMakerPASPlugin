@@ -15,6 +15,7 @@ We need a custom token here because the authenticated user `TEST_USER_NAME `
 is not the user we call the view with `SITE_OWNER_NAME`:
 
     >>> import hmac
+    >>> from Products.CMFPlone.utils import safe_encode
     >>> def getAuth():
     ...     try:
     ...         from plone.protect import authenticator
@@ -22,7 +23,7 @@ is not the user we call the view with `SITE_OWNER_NAME`:
     ...         user = SITE_OWNER_NAME
     ...         ring = authenticator._getKeyring(user)
     ...         secret = ring.random()
-    ...         return hmac.new(secret, user, sha1).hexdigest()
+    ...         return hmac.new(safe_encode(secret), safe_encode(user), sha1).hexdigest()
     ...     except (ImportError, AttributeError):  # no or old plone.protect auto csrf, so no worries
     ...         return ''
 
@@ -140,9 +141,9 @@ Make sure we only have 3 users.
     >>> try:
     ...     browser.getControl(name='auth-3:list').value
     ... except LookupError:
-    ...     print 'good'
+    ...     print('good')
     ... else:
-    ...     print 'bad'
+    ...     print('bad')
     good
 
 And finally delete a row.

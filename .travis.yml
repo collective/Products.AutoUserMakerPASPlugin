@@ -10,29 +10,14 @@ addons:
       libxslt-dev
       python-imaging
 python:
-  - 2.6
   - 2.7
+  - 3.7
+  - 3.8
 env:
-  - PLONE=4.1
-  - PLONE=4.2
-  - PLONE=4.3
-  - PLONE=5.0
-  - PLONE=5.1
-matrix:
-  exclude:
-    - python: 2.7
-      env: PLONE=4.1
-    - python: 2.6
-      env: PLONE=4.2
-    - python: 2.6
-      env: PLONE=4.3
-    - python: 2.6
-      env: PLONE=5.0
-    - python: 2.6
-      env: PLONE=5.1
+  - PLONE=5.2
+
 before_install:
-  - pip install --upgrade pip setuptools
-  - if [ $PLONE == 5.0 ]; then pip install --upgrade setuptools==21.0.0; fi
+  - pip install --upgrade pip setuptools==42.0.2
 install:
   - python bootstrap$(echo $PLONE | cut -f1 -d.).py -c test-$PLONE.x.cfg
   - bin/buildout -t 5 -Nc test-$PLONE.x.cfg
